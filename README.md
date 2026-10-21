@@ -1,6 +1,7 @@
 # Project 28 — Building and Validating a New No-Reference Image-Quality Metric
 
-**Course:** CSE 681 — Digital Image Processing & Video Processing
+**Course:** CSE 681 — Digital Image Processing & Video Processing (F26)
+**Team project · 9 weeks · Milestones at Weeks 3 / 6 / 9**
 
 Build a lightweight **no-reference** image-quality model: predict a quality score from a
 single distorted image, with no pristine reference, and validate it against human MOS
@@ -51,11 +52,24 @@ Requires Python 3.10+.
 
 ```
 ├── data/                          # datasets (not committed) — see Datasets
-├── docs/journal.md                # step-by-step build log (why + commands + verification)
+├── docs/
+│   ├── journal.md                 # step-by-step build log (why + commands + verification)
+│   └── literature-shortlist.md    # M1 reading list with citation roles
 ├── milestones/                    # M1-M3 LaTeX reports + shared references.bib
 ├── notebooks/                     # Colab / Jupyter notebooks (00_colab_starter first)
 ├── results/                       # tables, curves, figures of record
 ├── src/
-│   └── utils.py                   # shared seed / reproducibility helpers
+│   ├── utils.py                   # shared seed / reproducibility helpers
+│   ├── baselines.py               # PSNR / SSIM / LPIPS
+│   ├── eval_protocol.py           # content split + SROCC/PLCC/RMSE
+│   └── run_m1_baselines.py        # M1 baseline runner
+├── tests/                         # regression tests for the protocol and metrics
+├── project-catalog.md             # course project catalog (entry 28)
+└── project-instructions-reduced.md  # course rules, rubrics, LaTeX templates
 ```
+
+## Course references
+
+- Project catalog entry 28: [`project-catalog.md`](project-catalog.md)
+- Rules, rubrics, LaTeX templates: [`project-instructions-reduced.md`](project-instructions-reduced.md)
 

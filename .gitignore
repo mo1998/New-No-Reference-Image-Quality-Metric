@@ -25,5 +25,5 @@ data/*
 .DS_Store
 Thumbs.db
 
-# Session/transcript exports (may contain secrets) - keep out of the repo
+# Local exports (may contain secrets) - keep out of the repo
 /*.json
