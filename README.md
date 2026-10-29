@@ -18,7 +18,7 @@ labels (KADID-10k, TID2013) using SROCC / PLCC.
 
 | # | Week | Deliverable | Status |
 |---|---|---|---|
-| M1 | 3 | Proposal + literature review + baseline correlation table (PSNR/SSIM/LPIPS vs MOS) | Not started |
+| M1 | 3 | Proposal + literature review + baseline correlation table (PSNR/SSIM/LPIPS vs MOS) | Started |
 | M2 | 6 | Baseline reproduced + model trained (first checkpoint) + preliminary SROCC/PLCC | Not started |
 | M3 | 9 | Final model + ablation + cross-dataset check (train KADID → test TID2013) + report/demo | Not started |
 
