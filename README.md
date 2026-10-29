@@ -51,11 +51,19 @@ Requires Python 3.10+.
 
 ```
 ├── data/                          # datasets (not committed) — see Datasets
-├── docs/journal.md                # step-by-step build log (why + commands + verification)
-├── milestones/                    # M1-M3 LaTeX reports + shared references.bib
-├── notebooks/                     # Colab / Jupyter notebooks (00_colab_starter first)
-├── results/                       # tables, curves, figures of record
+├── notebooks/
+│   └── 00_colab_starter.ipynb    # Colab starter (GPU, Drive, clone, baselines, push)
+├── results/
+│   ├── .gitkeep
+│   ├── m1_baseline_correlations.csv
+│   └── m1_baseline_correlations_test_split_raw.csv
 ├── src/
-│   └── utils.py                   # shared seed / reproducibility helpers
+│   ├── baselines.py              # PSNR / SSIM / LPIPS
+│   ├── eval_protocol.py          # content split + SROCC/PLCC/RMSE
+│   ├── run_m1_baselines.py       # M1 baseline runner
+│   └── utils.py                  # shared seed / reproducibility helpers
+└── tests/
+    ├── test_baselines.py         # PSNR cap regression test
+    └── test_eval_protocol.py     # protocol sanity tests
 ```
 
