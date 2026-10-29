@@ -1,10 +1,10 @@
-"""M1 deliverable runner: full-reference baseline correlations vs DMOS.
+"""Runner for the M1 deliverable: full-reference baseline correlations vs DMOS.
 
-Runs PSNR / SSIM / LPIPS on a content-based train/test split (split by
-reference image, fixed seed 42) of KADID-10k and reports SROCC / PLCC / RMSE
-against the human DMOS labels. Writes:
-    results/m1_baseline_correlations.csv                 (summary table)
-    results/m1_baseline_correlations_<subset>_raw.csv    (per-image scores)
+Runs PSNR, SSIM and LPIPS on a content-based train/test split of KADID-10k
+(split by reference image, fixed seed 42) and reports SROCC, PLCC and RMSE
+against the human DMOS labels. Writes a summary table to
+results/m1_baseline_correlations.csv and per-image scores to
+results/m1_baseline_correlations_<subset>_raw.csv.
 
 Usage:
     python src/run_m1_baselines.py --data-root /content/kadid10k/kadid10k \
@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+# Make the sibling modules importable whether this is run as a script or imported
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from baselines import MAX_PSNR_DB, LPIPSMetric, psnr, ssim  # noqa: E402
 from eval_protocol import (                    # noqa: E402
@@ -42,19 +43,23 @@ def main():
                     help='also evaluate on all 10,125 images (slower)')
     args = ap.parse_args()
 
+    # KADID-10k layout: images/ holds the PNGs, dmos.csv holds the human labels
     img_dir = os.path.join(args.data_root, 'images')
     df = pd.read_csv(os.path.join(args.data_root, 'dmos.csv'))
 
+    # Split by reference (content) so no image content leaks across train/test
     train_refs, test_refs = split_by_reference(df['ref_img'], args.test_frac, args.seed)
     test_mask = df['ref_img'].isin(test_refs)
     print(f'refs: {len(train_refs)} train / {len(test_refs)} test '
           f'(content split, seed {args.seed})')
     print(f'images: {test_mask.sum()} test distorted / {len(df)} total')
 
+    # By default only the held-out test split is reported; --full adds all images
     subsets = {'test_split': df[test_mask]}
     if args.full:
         subsets['all_images'] = df
 
+    # LPIPS model is expensive to build; create once and reuse for every pair
     lpips_metric = LPIPSMetric()
     print('LPIPS device:', lpips_metric.device)
 
@@ -69,6 +74,7 @@ def main():
             ssim_vals.append(ssim(dp, rp))
             lpips_vals.append(lpips_metric(dp, rp))
 
+        # Report how many pairs hit the PSNR ceiling (near-identical images)
         n_capped = sum(1 for v in psnr_vals if v >= MAX_PSNR_DB)
         if n_capped:
             print(f'PSNR hit the {MAX_PSNR_DB:.0f} dB ceiling for {n_capped} pair(s) '
@@ -80,6 +86,7 @@ def main():
             ('SSIM', ssim_vals, True),
             ('LPIPS', lpips_vals, False),
         ):
+            # LPIPS is lower-better, so flip its sign before correlating
             scores = np.asarray(vals) if higher_better else orient_higher_is_better(vals)
             rep = correlation_report(scores, mos)
             summary_rows.append({'subset': subset_name, 'metric': name, **rep,
@@ -87,6 +94,7 @@ def main():
             print(f'{name}: SROCC={rep["srocc"]:.4f}  PLCC={rep["plcc"]:.4f}  '
                   f'RMSE={rep["rmse"]:.4f}')
 
+        # Keep the per-image scores for later error analysis / figures
         raw = sub[['dist_img', 'ref_img', 'dmos']].copy()
         raw['psnr'] = psnr_vals
         raw['ssim'] = ssim_vals
@@ -96,6 +104,7 @@ def main():
         print('saved raw scores:', raw_path)
 
     out_df = pd.DataFrame(summary_rows)
+    # Make sure the destination folder exists before writing the summary
     os.makedirs(os.path.dirname(args.out) or '.', exist_ok=True)
     out_df.to_csv(args.out, index=False)
     print()
