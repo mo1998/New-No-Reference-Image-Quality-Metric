@@ -11,8 +11,8 @@ labels (KADID-10k, TID2013) using SROCC / PLCC.
 | Code | Name |
 |---|---|
 | 2400008 | Mohamed Ahmed Fathy Abdelrazik |
-| Student B | TBD |
-| Student C | TBD |
+| 2501922 | Novert Ahmed Fahim Abdelfattah |
+| 2501897 | Farah Hossam Eldin Mahmoud |
 
 ## Milestones
 
