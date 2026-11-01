@@ -1,0 +1,246 @@
+\documentclass[11pt]{article}
+
+% ============================================================
+% Milestone 1 -- Project Proposal & Literature Review
+% DIP Team Project -- Project 28: New No-Reference Image-Quality Metric
+% Built from the official template (templates/m1_proposal.tex)
+% ============================================================
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[round]{natbib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, citecolor=blue!50!black, urlcolor=blue!50!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+\title{\LARGE Project Proposal \& Literature Review \\[4pt]
+\large Building and Validating a Lightweight No-Reference Image-Quality Metric (Project 28)}
+\author{
+  Novert Ahmed Fahim Abdelfattah \and
+  Farah Hossam Eldin Mahmoud \and
+  Mohamed Ahmed Fathy Abdelrazik
+}
+\date{Milestone 1 --- 1-11-2026 \\{} CSE681 --- Advanced Digital Image Processing}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Most images we actually look at have been compressed, resized, or filtered before we see
+them, and in those settings the clean original is usually gone. PSNR, SSIM and LPIPS all
+need that original, so they cannot score a photo that arrives through a messaging app or a
+streaming service. This project builds a no-reference quality metric: a small regression
+head trained on features from a frozen pretrained network, with KADID-10k as the source of
+human labels (10,125 distorted images with DMOS scores). We have already reproduced the
+reference baselines on a content-based split (seed 42). LPIPS reaches SROCC 0.808 against
+human scores, SSIM 0.627 and PSNR 0.667; those numbers are the target our model has to
+approach without seeing the reference. Code and results are public in our
+\href{https://github.com/mo1998/dip-project-28-nr-iqa}{GitHub repository}.
+\end{abstract}
+
+\section{Problem Statement \& Motivation}
+\label{sec:motivation}
+Take a single image that has been compressed, blurred, or re-touched, with no clean version
+available, and try to say how good it looks in a way that matches human judgement. That is
+the no-reference image quality assessment (NR-IQA) problem. The metrics we use in the
+course, PSNR and SSIM, compare a test image against a reference and were designed for
+controlled pipelines where that reference exists. In practice it often does not: photos are
+uploaded, re-encoded, enhanced by apps, or generated. Recent work also shows that
+full-reference scores can be pushed up without a real gain in perceived quality
+\citep{siniukov2022limitations, chen2025afine}, so the interesting question is how far we
+can get from the distorted image alone. Our project answers it with a small learned model,
+validated against human opinion scores.
+
+\section{Related Work}
+\label{sec:related}
+Work on NR-IQA has moved in two directions over the past few years. The first reuses a
+large pretrained model and adds something small on top. CLIP-IQA scores an image by
+comparing its CLIP embedding to antonym prompts such as ``a good photo'' and ``a bad
+photo'' \citep{wang2023clipiqa}; MA-CLIP later showed that the magnitude of the CLIP
+feature is itself a useful quality cue \citep{liao2026maclip}. ARNIQA keeps the same
+economy with a different backbone: a frozen encoder learns a distortion manifold and
+quality is read out by a linear regressor \citep{agnolucci2024arniqa}. A recent WACV study
+compares six frozen backbones under an identical small head and finds that even the choice
+of activation function matters \citep{yadav2026vlfoundations}. The second direction builds
+lightweight end-to-end models; LAR-IQA uses MobileNetV3 branches and reports
+KADID-to-TID2013 transfer \citep{jamshidi2024lariqa}. Surveys \citep{ma2025survey} and the
+newest full-reference work \citep{chen2025afine} agree that generalization, not in-dataset
+accuracy, is the unsolved part.
+
+Our plan follows the first direction and keeps the adaptation as small as possible. We use
+no language prompts, and unlike \citet{jamshidi2024lariqa} we do not train the encoder: a
+small frozen backbone supplies features, a two-layer head maps them to a score, and
+evaluation uses a content split plus a cross-dataset check. Table~\ref{tab:refs} lists the
+references this plan builds on.
+
+\begin{table}[h]
+\centering
+\caption{Key references.}
+\label{tab:refs}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.12\linewidth}p{0.45\linewidth}@{}}
+\toprule
+\textbf{Reference} & \textbf{Year} & \textbf{Relevance to this project} \\
+\midrule
+\citep{zhang2018lpips} & 2018 & Learned FR perceptual metric; strongest baseline to approach \\
+\citep{ding2022dists}  & 2022 & Structure + texture FR metric; optional baseline \\
+\citep{siniukov2022limitations} & 2022 & FR metrics can be gamed; motivates the NR framing \\
+\citep{wang2023clipiqa} & 2023 & Frozen CLIP prompts for NR-IQA; frozen-backbone philosophy \\
+\citep{agnolucci2024arniqa} & 2024 & Frozen encoder + linear regressor; closest design to ours \\
+\citep{jamshidi2024lariqa} & 2024 & Lightweight mobile NR-IQA; KADID$\rightarrow$TID2013 protocol \\
+\citep{chen2025afine} & 2025 & Limits of the FR paradigm; motivation \\
+\citep{ma2025survey} & 2025 & Recent survey; structures this review \\
+\citep{lao2025spips} & 2025 & Hybrid semantic + low-level metric; recent point of reference \\
+\citep{yadav2026vlfoundations} & 2026 & Controlled frozen-backbone study; head design matters \\
+\citep{liao2026maclip} & 2026 & Training-free CLIP-magnitude metric; freshest method \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Dataset \& Baseline Plan}
+\label{sec:data}
+\textbf{Dataset.} We use KADID-10k \citep{lin2019kadid}. It contains 81 pristine images,
+each degraded by 25 distortion types at five severity levels, giving 10,125 distorted
+images. Every image has a differential mean opinion score (DMOS) between 1 and 5, higher
+meaning better perceived quality. The database is free for research use and we cite it as
+required. We keep all 10,125 images but split by reference image: 65 references for
+training, 16 for testing, with seed 42 fixed before any experiment. Splitting by distorted
+image instead would put different versions of the same content on both sides and inflate
+every correlation, so we avoid it deliberately. TID2013 (3,000 images, 24 distortion types)
+is held back for the M3 cross-dataset check. The archive we downloaded is recorded
+byte-for-byte (3,067,408,471 bytes), and the SHA-256 of the label file matches the authors'
+mirror, so a rerun on another machine starts from the same data.
+
+\textbf{Baselines.} We compare against PSNR and SSIM, computed on RGB because KADID
+contains colour distortions that a grayscale comparison would miss, and against the
+pretrained LPIPS metric \citep{zhang2018lpips} with its AlexNet backbone. Correlations
+follow the usual IQA convention: SROCC directly, PLCC and RMSE after a four-parameter
+logistic fit, because metric outputs and DMOS are not on the same scale. Sixty-four test
+pairs are (near-)identical to their reference and would give an infinite PSNR, so PSNR is
+capped at 60 dB and those pairs are counted. Table~\ref{tab:prelim} shows the baseline
+numbers on the 2,000 test images; these are what our no-reference model has to match using
+only the distorted image.
+
+\begin{table}[h]
+\centering
+\caption{Dataset summary.}
+\label{tab:data}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Dataset} & \textbf{Subset used} & \textbf{Link} \\
+\midrule
+KADID-10k & 10,125 distorted + 81 refs; 65/16 split & \href{http://database.mmsp-kn.de/kadid-10k-database.html}{KADID-10k page} \\
+TID2013 & 3,000 distorted + 25 refs; M3 only & \href{http://www.ponomarenko.info/tid2013.htm}{TID2013 page} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Preliminary baseline correlations on the M1 test split (2,000 distorted
+images), computed by our own pipeline.}
+\label{tab:prelim}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{SROCC} & \textbf{PLCC} & \textbf{RMSE} \\
+\midrule
+PSNR  & 0.667 & 0.670 & 0.803 \\
+SSIM  & 0.627 & 0.616 & 0.852 \\
+LPIPS \citep{zhang2018lpips} & 0.808 & 0.807 & 0.639 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Proposed Method}
+\label{sec:method}
+The pipeline has five steps.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Input.} The distorted image alone, resized to a fixed working resolution,
+        with horizontal flips for augmentation.
+  \item \textbf{Backbone.} MobileNetV3-Large (about 5.4M parameters, ImageNet weights)
+        produces a pooled feature vector. We never fine-tune it, so features are computed
+        once per image and reused.
+  \item \textbf{Head.} A two-layer MLP maps the feature vector to one score. This is the
+        only part we train. Keeping it small is deliberate: with 8,125 training images a
+        larger head would memorize them.
+  \item \textbf{Training.} MSE against DMOS, Adam, early stopping, seed 42. A pairwise
+        ranking term is a stretch item.
+  \item \textbf{Evaluation.} The same split and metrics as the baselines, plus
+        KADID$\rightarrow$TID2013 transfer at M3.
+\end{enumerate}
+
+The contribution is not a new network. We take the frozen-feature approach and keep it as
+small as possible, with a split that avoids leakage and a generalization check that most
+in-dataset comparisons skip.
+
+\section{Feasibility \& Compute Plan}
+\label{sec:feasibility}
+Compute tier: \textbf{CPU-OK / GPU-light}. The course machine (8-core CPU, 16\,GB RAM) can
+run every step; we also use a free Colab T4 to speed up feature extraction. Extracting
+features for 10,125 images takes minutes on the T4 and a few hours on CPU, but it happens
+once; after that, training the head takes seconds to minutes. The baseline table in this
+report already ran end-to-end on the free Colab tier in under ten minutes. Checkpoints and
+result files are stored in the repository and in a private drive, and every script is
+idempotent with a fixed seed, so losing a Colab session costs time, not results.
+
+\subsection{Minimum Viable Deliverable (MVP)}
+A frozen MobileNetV3-Large plus a trained MLP head that predicts DMOS on the 16 test
+references and is reported in the same table as the baselines. If it works, we have a valid
+comparison; if the correlation is low, the per-distortion breakdown still tells us where
+the frozen features fail.
+
+\subsection{Stretch Goal}
+Train on KADID and test on TID2013, add one ablation (backbone size or head width,
+optionally the ranking loss), and if time allows compare with MA-CLIP's released code as a
+training-free reference point \citep{liao2026maclip}.
+
+\section{Risk Assessment}
+\label{sec:risk}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Overfitting.} A frozen encoder limits the damage, but the head can still
+        memorize content. We keep it small, stop early on a validation slice, and report
+        the curve rather than only the best epoch.
+  \item \textbf{Some distortion types may be poorly represented in MobileNet features},
+        especially the colour distortions. If the per-type breakdown shows a weak family,
+        we switch to EfficientNet-B0 or a small ViT; the fallback is a compact CNN trained
+        from scratch.
+  \item \textbf{Colab sessions die without warning.} Checkpoints and results are copied to
+        Drive and to the repository, and the pipeline reruns from a fixed seed, so a lost
+        session costs a few minutes of recomputation.
+  \item \textbf{KADID is research-use only.} We do not redistribute the images; the
+        repository contains code and derived numbers, not the dataset.
+\end{itemize}
+
+\section{Work Breakdown}
+\label{sec:workbreakdown}
+\begin{table}[h]
+\centering
+\caption{Milestone task allocation (see also the course project catalog entry for this
+project).}
+\label{tab:tasks}
+\begin{tabular}{@{}p{0.12\linewidth}p{0.26\linewidth}p{0.26\linewidth}p{0.26\linewidth}@{}}
+\toprule
+\textbf{Milestone} & \textbf{Student A} & \textbf{Student B} & \textbf{Student C} \\
+\midrule
+M1 (Wk 3) & Dataset pipeline and integrity checks; baseline correlations (done); literature table & Backbone and head design; feasibility test & Evaluation protocol and harness (done); repository hygiene \\
+M2 (Wk 6) & Full baseline table; per-distortion analysis & First trained checkpoint; backbone ablation & Preliminary comparison table; figures \\
+M3 (Wk 9) & Final baselines; TID2013 pipeline & Final model and ablations; ranking-loss variant & Cross-dataset table; demo; report figures \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{AI-Tool Usage Disclosure}
+AI-tool disclosure: code scaffolding, literature-search assistance, and LaTeX/prose editing
+were AI-assisted; all experiments were run and verified by the team, who understand and can
+explain the full pipeline.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
