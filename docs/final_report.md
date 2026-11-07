@@ -43,7 +43,7 @@ methods surveyed in `docs/literature_review.md` (SigLIP2/B_Gated 0.970, MANIQA
 latency than the two leaders.  It is **not** an absolute state of the art:
 other 2026 methods may be unpublished or unreviewed, and 316 M is not
 "lightweight" by mobile standards.  The 93 M distilled student reaches
-**0.9414 ± 0.0115** (99.3% of the teacher's accuracy at 3.4× fewer parameters),
+**0.9421 ± 0.0120** (99.4% of the teacher's accuracy at 3.4× fewer parameters),
 and the 93 M B/16 model reaches 0.9393.  We report the top-3 claim with these
 qualifications rather than as an unqualified SOTA.
 
@@ -55,8 +55,8 @@ qualifications rather than as an unqualified SOTA.
 * Partial fine-tuning is essential: full fine-tuning overfits 57 contents and
   loses 0.03 KADID SROCC.
 * Scaling the foundation encoder from B/16 (93 M) to L/16 (316 M) adds
-  +0.009 KADID (p = 0.098) and a 93 M distilled student recovers 0.9414, i.e.
-  99.3% of the teacher's accuracy at 3.4× fewer parameters.
+  +0.009 KADID (p = 0.098) and a 94 M distilled student recovers 0.9421, i.e.
+  99.4% of the teacher's accuracy at 3.4× fewer parameters.
 * Higher resolution helps in-dataset (+0.024) but hurts cross-dataset
   (−0.041); the effect is not statistically significant on the single split.
 * The NSS statistical branch improves cross-dataset generalisation
@@ -127,7 +127,7 @@ references.  Full per-fold values are in `results/cv/*.json`.
 |---|---:|---:|---:|---:|
 | **SigLIP-L/16 384 + aux/rank/TTA** | 316.6 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 |
 | SigLIP-L/16 256 + aux/rank/TTA | 316.3 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** |
-| Distilled SigLIP-B/16 384 | 93.4 M | 0.9414 ± 0.0115 | 0.948 | 0.7132 |
+| Distilled SigLIP-B/16 384 (score+feature) | 94.2 M | 0.9421 ± 0.0120 | 0.947 | 0.7127 |
 | SigLIP-B/16 384 + aux/rank/TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 |
 | SigLIP-B/16 224 + aux/rank/TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 |
 | QStatFusion 224 | 93.8 M | 0.8885* | 0.8974* | **0.7528*** |
@@ -174,7 +174,7 @@ The **L/16 256** model is the best accuracy/latency point: 7.5 ms per image,
 1229 MB, 0.9365 KADID and 0.7353 TID.  The L/16 384 accuracy point doubles
 latency (15.1 ms) and triples FLOPs for +0.0116 KADID and −0.012 TID.  The
 93 M B/16 384 model is the deployment point: 10.9 ms, 390 MB, 0.9393 KADID;
-its distilled variant reaches 0.9414 at the same cost.  The from-scratch
+its distilled variant reaches 0.9421 at the same cost.  The from-scratch
 MSOSNet is the smallest (0.30 M) and fastest in FLOPs but not in batch-1
 latency, because its statistical pooling is launch-bound.
 
@@ -210,6 +210,9 @@ Paired content-level bootstrap (300–2000 resamples):
 | 384 vs 224 (paired 5-fold t-test) | SROCC | +0.0186 | 0.0025 |
 | SigLIP-L384 vs L256 (paired 5-fold) | SROCC | +0.0116 | 0.023 |
 | SigLIP-L384 vs B384 (paired 5-fold) | SROCC | +0.0088 | 0.098 |
+| Feature-distilled 94 M vs L384 teacher | SROCC | −0.0059 | 0.110 |
+| Feature-distilled 94 M vs B384 | SROCC | +0.0028 | 0.120 |
+| Feature-distilled vs score-only distill | SROCC | +0.0007 | 0.368 |
 | SigLIP2 vs SigLIP (single split) | SROCC | −0.041 | 0.003 |
 | QStat vs SigLIP (single split) | KADID SROCC | −0.008 | 0.073 |
 | QStat vs SigLIP (TID2013) | TID SROCC | +0.027 | 0.003 |
@@ -285,7 +288,7 @@ four-point frontier:
   table, behind the two ~400 M foundation probes at 0.970);
 * **0.9365 ± 0.0074** KADID and **0.7353 ± 0.0084** TID at 316 M / 7.5 ms
   (balanced point);
-* **0.9414 ± 0.0115** KADID from a 93 M distilled student (99.3% of the
+* **0.9421 ± 0.0120** KADID from a 94 M distilled student (99.4% of the
   teacher at 3.4× fewer parameters) and 0.9393 from the 93 M base model;
 * **0.7528** TID from 94 M QStatFusion (best cross-dataset).
 

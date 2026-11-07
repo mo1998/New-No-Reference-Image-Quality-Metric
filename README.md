@@ -41,7 +41,7 @@ A complete, reproducible NR-IQA research framework:
 | SigLIP-L/16 256 + aux + rank + TTA | 316 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** | 9.4 ms |
 | SigLIP-B/16 384 + aux + rank + TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 | 10.9 ms |
 | SigLIP-B/16 224 + aux + rank + TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 | 6.2 ms |
-| Distilled SigLIP-B/16 384 (from L/16) | 93.4 M | **0.9414 ± 0.0115** | 0.948 | 0.7132 | 10.9 ms |
+| Distilled SigLIP-B/16 384 (score+feature) | 94.2 M | **0.9421 ± 0.0120** | 0.947 | 0.7127 | 10.9 ms |
 | QStatFusion 224 | 93.8 M | 0.8885* | 0.8974* | **0.7528*** | 8.5 ms |
 | MSOSNet (from scratch) | 0.30 M | 0.721* | 0.730* | 0.483* | 3.7 ms |
 | ResNet-18 (ImageNet) | 11.2 M | 0.769* | 0.779* | 0.678* | 2.7 ms |

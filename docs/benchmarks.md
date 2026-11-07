@@ -17,7 +17,7 @@ test-time labels.  TTA = horizontal-flip averaging.
 |---|---:|---:|---:|---:|---:|
 | **SigLIP-L/16 384**, aux + rank + TTA | 316.6 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 | 0.7578 |
 | SigLIP-L/16 256, aux + rank + TTA | 316.3 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** | **0.7801** |
-| Distilled SigLIP-B/16 384 (from L/16) | 93.4 M | 0.9414 ± 0.0115 | 0.948 | 0.7132 | 0.741 |
+| Distilled SigLIP-B/16 384 (score+feature) | 94.2 M | 0.9421 ± 0.0120 | 0.947 | 0.7127 | 0.741 |
 | SigLIP-B/16 384, aux + rank + TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 | 0.7428 |
 | SigLIP-B/16 224, aux + rank + TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 | 0.7746 |
 | SigLIP-B/16 224, no aux/rank/TTA (baseline) | 93.1 M | 0.8688* | 0.8772* | 0.7111* | 0.7419* |
@@ -137,7 +137,7 @@ CV.  Cross-dataset numbers are KADID→TID2013, zero-shot.
 | **This work, SigLIP-L/16 384** | **316 M** | **0.948** | 0.723 | 5-fold CV |
 | **This work, SigLIP-L/16 256** | **316 M** | 0.937 | **0.735** | 5-fold CV |
 | **This work, SigLIP-B/16 384** | **93 M** | **0.939** | 0.717 | 5-fold CV |
-| **This work, SigLIP-B/16 384 distilled** | **93 M** | 0.941 | 0.713 | 5-fold CV |
+| **This work, SigLIP-B/16 384 distilled** | **94 M** | 0.942 | 0.713 | 5-fold CV |
 | **This work, SigLIP-B/16 224** | **93 M** | 0.921 | **0.728** | 5-fold CV |
 | **This work, QStatFusion 224** | **94 M** | 0.888 (single) | **0.753** (single) | single split |
 
@@ -148,7 +148,7 @@ zero-shot number.
 surveyed published KADID-10k table, behind the two ~400 M foundation probes
 (0.970) and ahead of MANIQA (0.946), at 21% fewer parameters and lower latency
 than the leaders.  The 93 M B/16 384 model (0.9393) and its distilled variant
-(0.9414) are the efficiency points; the distilled student retains 99.3% of the
+(0.9421) are the efficiency points; the distilled student retains 99.4% of the
 teacher's accuracy at 3.4× fewer parameters.  The 224 model (0.9207 TID 0.7284)
 and QStatFusion (0.888 TID 0.7528) are the cross-dataset points.  We do **not**
 claim an absolute state of the art; the top-3 claim is bounded by the surveyed

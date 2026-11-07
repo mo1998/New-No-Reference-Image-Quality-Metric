@@ -189,13 +189,17 @@ class Trainer:
             float(loss_cfg.get("aux_distortion", 0.0)) > 0
             and hasattr(self.model, "forward_aux")
         )
+        use_feature = (
+            float(loss_cfg.get("feature_distill", 0.0)) > 0
+            and hasattr(self.model, "forward_aux")
+        )
         for batch in self.loaders["train"]:
             images = batch["image"].to(self.device, non_blocking=True)
             mos = batch["mos"].to(self.device, dtype=torch.float32)
             target = normalize_targets(mos, self.target_stats)
             self.optimizer.zero_grad(set_to_none=True)
             with torch.cuda.amp.autocast(enabled=self.use_amp):
-                if use_aux:
+                if use_aux or use_feature:
                     pred, aux = self.model.forward_aux(images)
                 else:
                     pred, aux = self.model(images), None
@@ -204,11 +208,17 @@ class Trainer:
                     soft = normalize_targets(
                         batch["soft"].to(self.device, dtype=torch.float32), self.target_stats
                     )
+                teacher_feat = None
+                student_proj = None
+                if use_feature and "tfeat" in batch:
+                    teacher_feat = batch["tfeat"].to(self.device, dtype=torch.float32)
+                    student_proj = aux.get("proj") if aux is not None else None
                 loss, parts = compute_loss(
                     pred, target, loss_cfg, aux=aux,
                     dist_type=batch["dist_type"].to(self.device) if use_aux else None,
                     level=batch["level"].to(self.device) if use_aux else None,
                     refs=batch["ref"], soft=soft,
+                    teacher_feat=teacher_feat, student_proj=student_proj,
                 )
             self.scaler.scale(loss).backward()
             if float(tcfg.get("grad_clip", 0.0)) > 0:
@@ -277,6 +287,10 @@ class Trainer:
                 record["train_aux_dist"] = last_train["aux_dist"]
             if "aux_level" in last_train:
                 record["train_aux_level"] = last_train["aux_level"]
+            if "distill_loss" in last_train:
+                record["train_distill_loss"] = last_train["distill_loss"]
+            if "feature_distill_loss" in last_train:
+                record["train_feature_distill_loss"] = last_train["feature_distill_loss"]
             self.logger.log_epoch(record)
             score = val_metrics["srocc"] if monitor == "val_srocc" else -val_loss
             improved = score > self.best_metric + min_delta
@@ -311,6 +325,10 @@ class Trainer:
             state = self.best_ema_state if self.best_ema_state is not None else self.best_state
             self.model.load_state_dict(state)
         elif not self.select_best:
+            if self.ema is not None:
+                # Deployment/model-selection-free runs should still evaluate
+                # the EMA weights, not the last noisy training step.
+                self.model.load_state_dict(self.ema.state_dict())
             self.best_epoch = epoch + 1
         self.model.eval()
         return self.finalize()

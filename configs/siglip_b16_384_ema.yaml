@@ -1,0 +1,8 @@
+include: siglip_b16_384_kadid.yaml
+experiment:
+  name: siglip_b16_384_ema
+train:
+  epochs: 12
+  ema: 0.999
+  early_stop:
+    patience: 4

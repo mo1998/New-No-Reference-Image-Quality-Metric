@@ -291,9 +291,19 @@ def build_transform(
 class IQADataset(Dataset):
     """Torch dataset returning a dict per distorted image."""
 
-    def __init__(self, df: pd.DataFrame, transform: Optional[Any] = None):
+    def __init__(self, df: pd.DataFrame, transform: Optional[Any] = None,
+                 feature_npz: Optional[str] = None):
         self.df = df.reset_index(drop=True)
         self.transform = transform
+        self.features = None
+        self.feature_index = {}
+        if feature_npz:
+            if not os.path.exists(feature_npz):
+                raise FileNotFoundError(f"Teacher feature file not found: {feature_npz}")
+            with np.load(feature_npz) as z:
+                names = [str(n) for n in z["names"]]
+                self.features = z["features"].astype(np.float32)
+            self.feature_index = {n: i for i, n in enumerate(names)}
 
     def __len__(self) -> int:
         return len(self.df)
@@ -314,6 +324,11 @@ class IQADataset(Dataset):
         }
         if "soft" in row and pd.notna(row["soft"]):
             item["soft"] = float(row["soft"])
+        if self.features is not None:
+            idx = self.feature_index.get(str(row["name"]))
+            if idx is None:
+                raise KeyError(f"No teacher feature for {row['name']}")
+            item["tfeat"] = torch.from_numpy(self.features[idx])
         return item
 
 
@@ -328,11 +343,12 @@ def make_loader(
     shuffle: bool = False,
     drop_last: bool = False,
     seed: int = 42,
+    feature_npz: Optional[str] = None,
 ) -> DataLoader:
     """Deterministic DataLoader wrapper."""
     generator = torch.Generator()
     generator.manual_seed(seed)
-    dataset = IQADataset(df, transform=transform)
+    dataset = IQADataset(df, transform=transform, feature_npz=feature_npz)
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -421,8 +437,9 @@ def make_grouped_loader(
     num_workers: int = 8,
     drop_last: bool = True,
     seed: int = 42,
+    feature_npz: Optional[str] = None,
 ) -> DataLoader:
-    dataset = IQADataset(df, transform=transform)
+    dataset = IQADataset(df, transform=transform, feature_npz=feature_npz)
     sampler = GroupedBatchSampler(
         df, batch_size=batch_size, refs_per_batch=refs_per_batch,
         seed=seed, drop_last=drop_last,
@@ -485,16 +502,22 @@ def make_splits_and_loaders(cfg: Dict[str, Any]) -> Dict[str, Any]:
     bs = int(cfg["train"]["batch_size"])
     nw = int(data_cfg["num_workers"])
     seed = int(cfg["experiment"]["seed"])
+    feature_npz = data_cfg.get("teacher_features")
+    if feature_npz:
+        feature_npz = str(feature_npz).format(fold=int(data_cfg.get("fold", 0)))
+        print(f"teacher features: {feature_npz}")
     if bool(data_cfg.get("grouped_batch", False)):
         train_loader = make_grouped_loader(
             train_df, train_tf, bs,
             refs_per_batch=int(data_cfg.get("refs_per_batch", 8)),
             num_workers=nw, drop_last=cfg["train"]["drop_last"], seed=seed,
+            feature_npz=feature_npz,
         )
     else:
         train_loader = make_loader(
             train_df, train_tf, bs, nw, shuffle=True,
             drop_last=cfg["train"]["drop_last"], seed=seed,
+            feature_npz=feature_npz,
         )
     loaders = {
         "train": train_loader,

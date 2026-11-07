@@ -84,6 +84,8 @@ def compute_loss(
     level: Optional[torch.Tensor] = None,
     refs: Optional[Sequence[str]] = None,
     soft: Optional[torch.Tensor] = None,
+    teacher_feat: Optional[torch.Tensor] = None,
+    student_proj: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, Dict[str, float]]:
     """Weighted NR-IQA objective; returns (total, detached component dict)."""
     mse = F.mse_loss(pred, target)
@@ -99,17 +101,24 @@ def compute_loss(
     distill = pred.new_tensor(0.0)
     if soft is not None and float(loss_cfg.get("distill", 0.0)) > 0:
         distill = F.mse_loss(pred, soft)
+    feature_distill = pred.new_tensor(0.0)
+    if (teacher_feat is not None and student_proj is not None
+            and float(loss_cfg.get("feature_distill", 0.0)) > 0):
+        cos = F.cosine_similarity(student_proj, teacher_feat, dim=1, eps=1e-6).mean()
+        feature_distill = 1.0 - cos
     total = (
         float(loss_cfg.get("mse", 1.0)) * mse
         + float(loss_cfg.get("plcc", 0.0)) * plcc
         + float(loss_cfg.get("rank", 0.0)) * rank
         + float(loss_cfg.get("content_rank", 0.0)) * content_rank
         + float(loss_cfg.get("distill", 0.0)) * distill
+        + float(loss_cfg.get("feature_distill", 0.0)) * feature_distill
     )
     parts = {"mse": float(mse.detach()), "plcc_loss": float(plcc.detach()),
              "rank_loss": float(rank.detach()),
              "content_rank_loss": float(content_rank.detach()),
-             "distill_loss": float(distill.detach())}
+             "distill_loss": float(distill.detach()),
+             "feature_distill_loss": float(feature_distill.detach())}
 
     if aux is not None:
         w_dist = float(loss_cfg.get("aux_distortion", 0.0))

@@ -464,6 +464,7 @@ class TimmRegressor(nn.Module):
         aux_heads: bool = False,
         num_distortions: int = 25,
         num_levels: int = 5,
+        distill_dim: int = 0,
         **_,
     ):
         super().__init__()
@@ -494,6 +495,11 @@ class TimmRegressor(nn.Module):
         )
         self.freeze_blocks = int(freeze_blocks)
         self.aux_heads = bool(aux_heads)
+        self.distill_dim = int(distill_dim)
+        self.feature_proj = (
+            nn.Linear(self.feat_dim, self.distill_dim, bias=False)
+            if self.distill_dim > 0 else None
+        )
         if self.aux_heads:
             self.dist_head = nn.Linear(self.feat_dim, num_distortions)
             self.level_head = nn.Linear(self.feat_dim, num_levels)
@@ -521,7 +527,9 @@ class TimmRegressor(nn.Module):
     def forward_aux(self, x: torch.Tensor):
         f = self.forward_features(x)
         score = self.head(f).squeeze(1)
-        aux = {}
+        aux = {"feat": f}
+        if self.feature_proj is not None:
+            aux["proj"] = self.feature_proj(f)
         if self.aux_heads:
             aux["dist_logits"] = self.dist_head(f)
             aux["level_logits"] = self.level_head(f)
@@ -560,6 +568,7 @@ class QStatFusion(nn.Module):
         aux_heads: bool = False,
         num_distortions: int = 25,
         num_levels: int = 5,
+        distill_dim: int = 0,
         **_,
     ):
         super().__init__()
@@ -614,7 +623,9 @@ class QStatFusion(nn.Module):
     def forward_aux(self, x: torch.Tensor):
         f = self.forward_features(x)
         score = self.head(f).squeeze(1)
-        aux = {}
+        aux = {"feat": f}
+        if self.feature_proj is not None:
+            aux["proj"] = self.feature_proj(f)
         if self.aux_heads:
             aux["dist_logits"] = self.dist_head(f)
             aux["level_logits"] = self.level_head(f)
@@ -644,6 +655,7 @@ class Siglip2Regressor(nn.Module):
         aux_heads: bool = False,
         num_distortions: int = 25,
         num_levels: int = 5,
+        distill_dim: int = 0,
         **_,
     ):
         super().__init__()
@@ -668,6 +680,11 @@ class Siglip2Regressor(nn.Module):
             nn.Linear(head_hidden, 1),
         )
         self.aux_heads = bool(aux_heads)
+        self.distill_dim = int(distill_dim)
+        self.feature_proj = (
+            nn.Linear(self.feat_dim, self.distill_dim, bias=False)
+            if self.distill_dim > 0 else None
+        )
         if self.aux_heads:
             self.dist_head = nn.Linear(self.feat_dim, num_distortions)
             self.level_head = nn.Linear(self.feat_dim, num_levels)
@@ -696,7 +713,9 @@ class Siglip2Regressor(nn.Module):
     def forward_aux(self, x: torch.Tensor):
         f = self.forward_features(x)
         score = self.head(f).squeeze(1)
-        aux = {}
+        aux = {"feat": f}
+        if self.feature_proj is not None:
+            aux["proj"] = self.feature_proj(f)
         if self.aux_heads:
             aux["dist_logits"] = self.dist_head(f)
             aux["level_logits"] = self.level_head(f)
