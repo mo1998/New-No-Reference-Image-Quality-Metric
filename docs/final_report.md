@@ -169,12 +169,17 @@ measured with `src/nriqa/inference.py`:
 | SigLIP-B/16 384 | 93.4 M | 112.1 | 10.93 | 154 | 390 |
 | SigLIP-L/16 256 | 316.3 M | 162.6 | 7.49 | 219 | 1229 |
 | SigLIP-L/16 384 | 316.6 M | 383.9 | 15.05 | 89 | 1247 |
+| SigLIP2-L vision 256 (HF, reference) | 316.0 M | — | 7.89 | — | — |
+| SigLIP2-L vision 384 (HF, reference) | 316.3 M | — | 14.87 | — | — |
 
 The **L/16 256** model is the best accuracy/latency point: 7.5 ms per image,
 1229 MB, 0.9365 KADID and 0.7353 TID.  The L/16 384 accuracy point doubles
 latency (15.1 ms) and triples FLOPs for +0.0116 KADID and −0.012 TID.  The
 93 M B/16 384 model is the deployment point: 10.9 ms, 390 MB, 0.9393 KADID;
-its distilled variant reaches 0.9421 at the same cost.  The from-scratch
+its distilled variant reaches 0.9421 at the same cost.  SigLIP2-L, the
+surveyed leader, uses the same 316 M vision encoder at 14.87 ms — so the 316 M
+models have equal cost; the 94 M student is the efficiency contribution
+(3.4x fewer parameters, 31% lower latency, 0.9421 vs 0.9481).  The from-scratch
 MSOSNet is the smallest (0.30 M) and fastest in FLOPs but not in batch-1
 latency, because its statistical pooling is launch-bound.
 
@@ -248,6 +253,13 @@ remaining failure modes and motivate a colour-aware or frequency-aware branch.
   strong.
 * High resolution: helps KADID, hurts TID cross-dataset.
 * Simple ensembles of weak models: they dilute the best model.
+* Multi-teacher (L384 + L256) soft targets: 0.913 fold 0, worse than the
+  single-teacher 0.926; the weaker teacher's targets dominate.
+* Learned patch-attention pooling: 0.919 fold 0, worse than the plain CLS
+  head; the extra capacity overfits 63 contents.
+* 512 px dynamic input and EMA: both worse than the 384 px / standard recipe.
+* Feature distillation over score-only: +0.0007, not significant; the 94 M
+  student is capacity-limited, not supervision-limited.
 
 ## 6. Limitations and threats to validity
 

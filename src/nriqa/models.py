@@ -465,6 +465,7 @@ class TimmRegressor(nn.Module):
         num_distortions: int = 25,
         num_levels: int = 5,
         distill_dim: int = 0,
+        attention_pool: bool = False,
         **_,
     ):
         super().__init__()
@@ -486,9 +487,16 @@ class TimmRegressor(nn.Module):
         self.feat_dim = int(getattr(self.backbone, "num_features", 0)) or int(
             getattr(self.backbone, "embed_dim", 0)
         )
+        self.attention_pool = bool(attention_pool)
+        head_in = self.feat_dim * 2 if self.attention_pool else self.feat_dim
+        if self.attention_pool:
+            # Lightweight learned pooling over patch tokens.  The CLS token is
+            # kept as well, so the head sees both global and saliency-weighted
+            # evidence.  This costs <1 M parameters.
+            self.pool_score = nn.Linear(self.feat_dim, 1)
         self.head = nn.Sequential(
-            nn.LayerNorm(self.feat_dim),
-            nn.Linear(self.feat_dim, head_hidden),
+            nn.LayerNorm(head_in),
+            nn.Linear(head_in, head_hidden),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(head_hidden, 1),
@@ -497,12 +505,12 @@ class TimmRegressor(nn.Module):
         self.aux_heads = bool(aux_heads)
         self.distill_dim = int(distill_dim)
         self.feature_proj = (
-            nn.Linear(self.feat_dim, self.distill_dim, bias=False)
+            nn.Linear(head_in, self.distill_dim, bias=False)
             if self.distill_dim > 0 else None
         )
         if self.aux_heads:
-            self.dist_head = nn.Linear(self.feat_dim, num_distortions)
-            self.level_head = nn.Linear(self.feat_dim, num_levels)
+            self.dist_head = nn.Linear(head_in, num_distortions)
+            self.level_head = nn.Linear(head_in, num_levels)
         if self.freeze_blocks != 0:
             self._apply_freezing()
 
@@ -519,7 +527,14 @@ class TimmRegressor(nn.Module):
 
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         x = (x - self.input_mean) / self.input_std
-        return self.backbone(x)
+        if not self.attention_pool:
+            return self.backbone(x)
+        tokens = self.backbone.forward_features(x)
+        cls = tokens[:, 0]
+        patches = tokens[:, 1:]
+        weights = torch.softmax(self.pool_score(patches).squeeze(-1), dim=1)
+        pooled = (patches * weights[..., None]).sum(dim=1)
+        return torch.cat([cls, pooled], dim=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.head(self.forward_features(x)).squeeze(1)
@@ -569,6 +584,7 @@ class QStatFusion(nn.Module):
         num_distortions: int = 25,
         num_levels: int = 5,
         distill_dim: int = 0,
+        attention_pool: bool = False,
         **_,
     ):
         super().__init__()
@@ -656,6 +672,7 @@ class Siglip2Regressor(nn.Module):
         num_distortions: int = 25,
         num_levels: int = 5,
         distill_dim: int = 0,
+        attention_pool: bool = False,
         **_,
     ):
         super().__init__()
@@ -672,9 +689,16 @@ class Siglip2Regressor(nn.Module):
         self.feat_dim = int(self.vision.config.hidden_size)
         self.register_buffer("input_mean", torch.tensor(0.5).view(1, 1, 1, 1))
         self.register_buffer("input_std", torch.tensor(0.5).view(1, 1, 1, 1))
+        self.attention_pool = bool(attention_pool)
+        head_in = self.feat_dim * 2 if self.attention_pool else self.feat_dim
+        if self.attention_pool:
+            # Lightweight learned pooling over patch tokens.  The CLS token is
+            # kept as well, so the head sees both global and saliency-weighted
+            # evidence.  This costs <1 M parameters.
+            self.pool_score = nn.Linear(self.feat_dim, 1)
         self.head = nn.Sequential(
-            nn.LayerNorm(self.feat_dim),
-            nn.Linear(self.feat_dim, head_hidden),
+            nn.LayerNorm(head_in),
+            nn.Linear(head_in, head_hidden),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(head_hidden, 1),
@@ -682,12 +706,12 @@ class Siglip2Regressor(nn.Module):
         self.aux_heads = bool(aux_heads)
         self.distill_dim = int(distill_dim)
         self.feature_proj = (
-            nn.Linear(self.feat_dim, self.distill_dim, bias=False)
+            nn.Linear(head_in, self.distill_dim, bias=False)
             if self.distill_dim > 0 else None
         )
         if self.aux_heads:
-            self.dist_head = nn.Linear(self.feat_dim, num_distortions)
-            self.level_head = nn.Linear(self.feat_dim, num_levels)
+            self.dist_head = nn.Linear(head_in, num_distortions)
+            self.level_head = nn.Linear(head_in, num_levels)
         self.freeze_blocks = int(freeze_blocks)
         self._apply_freezing()
 

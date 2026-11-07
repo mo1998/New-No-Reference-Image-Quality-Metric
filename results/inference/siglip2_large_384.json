@@ -1,0 +1,7 @@
+{
+  "model": "google/siglip2-large-patch16-384",
+  "params": 316283904,
+  "input_size": 384,
+  "latency_ms_batch1": 14.865878969430923,
+  "latency_ms_mean": 14.907635554360846
+}

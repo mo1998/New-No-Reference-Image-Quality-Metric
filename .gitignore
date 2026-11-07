@@ -45,3 +45,4 @@ results/cv/*_predictions.csv
 teacher_preds/
 teacher_feats/
 results/smoke/
+teacher_preds*/

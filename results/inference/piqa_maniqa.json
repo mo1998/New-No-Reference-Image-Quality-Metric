@@ -1,0 +1,6 @@
+{
+  "model": "maniqa",
+  "params": 135747530,
+  "input_size": 224,
+  "latency_ms_batch1": 194.05858899699524
+}

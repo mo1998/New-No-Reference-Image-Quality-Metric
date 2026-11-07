@@ -1,0 +1,7 @@
+include: siglip_b16_384_featdistill.yaml
+experiment:
+  name: siglip_b16_384_attnpool
+model:
+  kwargs:
+    attention_pool: true
+    distill_dim: 1024

@@ -1,0 +1,6 @@
+{
+  "model": "hyperiqa",
+  "params": 27375369,
+  "input_size": 224,
+  "latency_ms_batch1": 10.5481410282664
+}

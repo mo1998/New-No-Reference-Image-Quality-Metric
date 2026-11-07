@@ -168,6 +168,8 @@ peak memory includes activations).  Throughput is batch 16.
 | SigLIP-B/16 384 | 93.4 M | 112.1 | 10.93 | 154 | 390 |
 | SigLIP-L/16 256 | 316.3 M | 162.6 | 7.49 | 219 | 1229 |
 | SigLIP-L/16 384 | 316.6 M | 383.9 | 15.05 | 89 | 1247 |
+| SigLIP2-L vision 256 (HF) | 316.0 M | — | 7.89 | — | — |
+| SigLIP2-L vision 384 (HF) | 316.3 M | — | 14.87 | — | — |
 
 MSOSNet is an instructive case: it has 76× fewer parameters and 27× fewer FLOPs
 than SigLIP-B/16, but its latency is only 1.7× lower at batch 1 because the
