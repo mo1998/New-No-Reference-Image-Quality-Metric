@@ -41,3 +41,5 @@ results/cv/*_predictions.csv
 # Cached model weights
 *.safetensors
 *.bin
+
+teacher_preds/

@@ -37,8 +37,11 @@ A complete, reproducible NR-IQA research framework:
 
 | Model | Params | SROCC ↑ | PLCC ↑ | TID2013 zero-shot SROCC ↑ | Latency (RTX 4090) |
 |---|---:|---:|---:|---:|---:|
-| SigLIP-B/16 224 + aux + rank + TTA | 93.1 M | **0.9207 ± 0.0166** | **0.9271** | **0.7284 ± 0.0157** | 6.2 ms |
-| SigLIP-B/16 384 + aux + rank + TTA | 93.4 M | **0.9393 ± 0.0149** | **0.9441** | 0.7166 ± 0.0123 | 10.9 ms |
+| SigLIP-L/16 384 + aux + rank + TTA | 316 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 | 15.1 ms |
+| SigLIP-L/16 256 + aux + rank + TTA | 316 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** | 9.4 ms |
+| SigLIP-B/16 384 + aux + rank + TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 | 10.9 ms |
+| SigLIP-B/16 224 + aux + rank + TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 | 6.2 ms |
+| Distilled SigLIP-B/16 384 (from L/16) | 93.4 M | **0.9414 ± 0.0115** | 0.948 | 0.7132 | 10.9 ms |
 | QStatFusion 224 | 93.8 M | 0.8885* | 0.8974* | **0.7528*** | 8.5 ms |
 | MSOSNet (from scratch) | 0.30 M | 0.721* | 0.730* | 0.483* | 3.7 ms |
 | ResNet-18 (ImageNet) | 11.2 M | 0.769* | 0.779* | 0.678* | 2.7 ms |
@@ -56,6 +59,8 @@ comparison and the limitations.
 **Statistically significant findings** (paired content-level bootstrap):
 
 * Distortion-aware auxiliary heads + ranking + TTA: **+0.028 SROCC, p = 0.003**.
+* SigLIP-L/16 384 vs 256 (paired 5-fold): **+0.012 SROCC, p = 0.023**.
+* L384 vs 93 M B/384: **+0.009 SROCC, p = 0.098** (not significant with 5 folds).
 * NSS branch (QStatFusion) vs SigLIP on TID2013: **+0.027 SROCC, p = 0.003**.
 * Removing auxiliary heads costs **0.042** KADID SROCC.
 * Full fine-tuning overfits: **−0.058** vs partial fine-tuning.

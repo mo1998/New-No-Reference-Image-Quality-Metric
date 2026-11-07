@@ -12,7 +12,7 @@ No loss peeks at a reference image.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -46,6 +46,35 @@ def pairwise_rank_loss(
     return losses.mean()
 
 
+def content_rank_loss(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    refs: Sequence[str],
+    margin: float = 0.05,
+    max_pairs: int = 4096,
+) -> torch.Tensor:
+    """Pairwise ranking loss restricted to distorted versions of the same content.
+
+    Global ranking losses spend most pairs on content differences; this loss
+    spends them on the within-content ordering that SROCC ultimately measures.
+    """
+    if pred.numel() < 2:
+        return pred.new_tensor(0.0)
+    import numpy as _np
+    ref_arr = _np.asarray([str(r) for r in refs])
+    same = torch.tensor(ref_arr[:, None] == ref_arr[None, :], device=pred.device)
+    diff_t = target[:, None] - target[None, :]
+    mask = same & (diff_t > margin)
+    if not bool(mask.any()):
+        return pred.new_tensor(0.0)
+    diff_p = pred[:, None] - pred[None, :]
+    losses = F.relu(margin - diff_p[mask])
+    if losses.numel() > max_pairs:
+        idx = torch.randperm(losses.numel(), device=losses.device)[:max_pairs]
+        losses = losses[idx]
+    return losses.mean()
+
+
 def compute_loss(
     pred: torch.Tensor,
     target: torch.Tensor,
@@ -53,6 +82,8 @@ def compute_loss(
     aux: Optional[Dict[str, torch.Tensor]] = None,
     dist_type: Optional[torch.Tensor] = None,
     level: Optional[torch.Tensor] = None,
+    refs: Optional[Sequence[str]] = None,
+    soft: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, Dict[str, float]]:
     """Weighted NR-IQA objective; returns (total, detached component dict)."""
     mse = F.mse_loss(pred, target)
@@ -60,13 +91,25 @@ def compute_loss(
     rank = pairwise_rank_loss(
         pred, target, margin=float(loss_cfg.get("margin", 0.05))
     )
+    content_rank = (
+        content_rank_loss(pred, target, refs, margin=float(loss_cfg.get("margin", 0.05)))
+        if (refs is not None and float(loss_cfg.get("content_rank", 0.0)) > 0)
+        else pred.new_tensor(0.0)
+    )
+    distill = pred.new_tensor(0.0)
+    if soft is not None and float(loss_cfg.get("distill", 0.0)) > 0:
+        distill = F.mse_loss(pred, soft)
     total = (
         float(loss_cfg.get("mse", 1.0)) * mse
         + float(loss_cfg.get("plcc", 0.0)) * plcc
         + float(loss_cfg.get("rank", 0.0)) * rank
+        + float(loss_cfg.get("content_rank", 0.0)) * content_rank
+        + float(loss_cfg.get("distill", 0.0)) * distill
     )
     parts = {"mse": float(mse.detach()), "plcc_loss": float(plcc.detach()),
-             "rank_loss": float(rank.detach())}
+             "rank_loss": float(rank.detach()),
+             "content_rank_loss": float(content_rank.detach()),
+             "distill_loss": float(distill.detach())}
 
     if aux is not None:
         w_dist = float(loss_cfg.get("aux_distortion", 0.0))

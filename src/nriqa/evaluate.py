@@ -64,6 +64,62 @@ def predict_loader(
     return pd.DataFrame(rows)
 
 
+
+
+@torch.no_grad()
+def predict_loader_multicrop(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    crop_size: int,
+    amp: bool = False,
+    flip: bool = False,
+) -> pd.DataFrame:
+    """Five-crop (center + four corners) test-time averaging.
+
+    The loader must deliver larger images than ``crop_size`` (the ``multi``
+    evaluation transform resizes the short side to ``crop_size + 64``).
+    Averaging several crops is more robust to localised artifacts than a
+    single centre crop, at 5x (or 10x with flip) inference cost.
+    """
+    model.eval()
+    rows: List[Dict[str, Any]] = []
+    use_amp = amp and device.type == "cuda"
+    for batch in loader:
+        images = batch["image"].to(device, non_blocking=True)
+        b, _, h, w = images.shape
+        c = crop_size
+        if h < c or w < c:
+            raise ValueError(f"multi-crop needs image >= {c}px, got {h}x{w}")
+        coords = [
+            (h // 2 - c // 2, w // 2 - c // 2),  # centre
+            (0, 0),
+            (0, w - c),
+            (h - c, 0),
+            (h - c, w - c),
+        ]
+        crops = [images[:, :, y:y + c, x:x + c] for y, x in coords]
+        stack = torch.cat(crops, dim=0)
+        with torch.cuda.amp.autocast(enabled=use_amp):
+            pred = model(stack)
+            if flip:
+                pred = 0.5 * (pred + model(torch.flip(stack, dims=[3])))
+        pred = pred.float().view(len(images), len(coords)).mean(dim=1).cpu().numpy()
+        for i in range(len(pred)):
+            rows.append(
+                {
+                    "name": batch["name"][i],
+                    "ref": batch["ref"][i],
+                    "dataset": batch["dataset"][i],
+                    "mos": float(batch["mos"][i]),
+                    "pred": float(pred[i]),
+                    "dist_type": int(batch["dist_type"][i]),
+                    "level": int(batch["level"][i]),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
 def predict_dataframe(
     model: torch.nn.Module,
     df: pd.DataFrame,
@@ -73,11 +129,15 @@ def predict_dataframe(
 ) -> pd.DataFrame:
     """Build the clean-protocol loader for ``df`` and run inference."""
     data_cfg = cfg["data"]
+    tta_mode = cfg["eval"].get("tta_mode", "flip" if cfg["eval"].get("tta") else "none")
+    if tta_mode == "none":
+        tta_mode = "none"
+    size = int(data_cfg["size"])
     transform = build_transform(
-        int(data_cfg["size"]),
+        size,
         train=False,
         norm=data_cfg["norm"],
-        eval_mode=data_cfg["eval_mode"],
+        eval_mode="multi" if tta_mode in ("multicrop", "both") else data_cfg["eval_mode"],
     )
     loader = make_loader(
         df,
@@ -87,11 +147,18 @@ def predict_dataframe(
         shuffle=False,
         seed=int(cfg["experiment"]["seed"]),
     )
-    preds = predict_loader(
-        model, loader, device,
-        amp=bool(cfg["train"].get("amp", False)),
-        tta=bool(cfg["eval"].get("tta", False)),
-    )
+    if tta_mode in ("multicrop", "both"):
+        preds = predict_loader_multicrop(
+            model, loader, device, crop_size=size,
+            amp=bool(cfg["train"].get("amp", False)),
+            flip=tta_mode == "both",
+        )
+    else:
+        preds = predict_loader(
+            model, loader, device,
+            amp=bool(cfg["train"].get("amp", False)),
+            tta=tta_mode == "flip",
+        )
     preds["split"] = split
     return preds
 

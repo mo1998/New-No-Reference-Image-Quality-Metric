@@ -1,0 +1,14 @@
+include: siglip_l16_256_kadid.yaml
+experiment:
+  name: siglip_l16_384_kadid
+data:
+  size: 384
+model:
+  kwargs:
+    model_name: vit_large_patch16_siglip_384
+train:
+  batch_size: 8
+  lr: 8.0e-5
+  epochs: 10
+  early_stop:
+    patience: 4

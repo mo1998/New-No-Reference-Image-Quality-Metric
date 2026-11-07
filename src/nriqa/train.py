@@ -199,10 +199,16 @@ class Trainer:
                     pred, aux = self.model.forward_aux(images)
                 else:
                     pred, aux = self.model(images), None
+                soft = None
+                if "soft" in batch and float(loss_cfg.get("distill", 0.0)) > 0:
+                    soft = normalize_targets(
+                        batch["soft"].to(self.device, dtype=torch.float32), self.target_stats
+                    )
                 loss, parts = compute_loss(
                     pred, target, loss_cfg, aux=aux,
                     dist_type=batch["dist_type"].to(self.device) if use_aux else None,
                     level=batch["level"].to(self.device) if use_aux else None,
+                    refs=batch["ref"], soft=soft,
                 )
             self.scaler.scale(loss).backward()
             if float(tcfg.get("grad_clip", 0.0)) > 0:
@@ -259,6 +265,7 @@ class Trainer:
                 "train_mse": last_train["mse"],
                 "train_plcc_loss": last_train["plcc_loss"],
                 "train_rank_loss": last_train.get("rank_loss", 0.0),
+                "train_content_rank_loss": last_train.get("content_rank_loss", 0.0),
                 "val_loss": val_loss,
                 "val_srocc": val_metrics["srocc"],
                 "val_plcc": val_metrics["plcc"],

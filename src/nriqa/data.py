@@ -273,6 +273,10 @@ def build_transform(
             # batching is still possible.  Important for classical metrics
             # whose features depend on the full image (blockiness, ringing).
             pass
+        elif eval_mode == "multi":
+            # Larger resize without cropping; the evaluator takes several
+            # fixed-size crops and averages their predictions.
+            ops += [T.Resize(size + 64, antialias=True)]
         else:
             raise ValueError(f"Unknown eval_mode: {eval_mode}")
 
@@ -299,7 +303,7 @@ class IQADataset(Dataset):
         with Image.open(row["path"]) as im:
             im = im.convert("RGB")
             img = self.transform(im) if self.transform is not None else T.ToTensor()(im)
-        return {
+        item = {
             "image": img,
             "mos": float(row["mos"]),
             "ref": str(row["ref"]),
@@ -308,6 +312,9 @@ class IQADataset(Dataset):
             "dist_type": int(row["dist_type"]),
             "level": int(row["level"]),
         }
+        if "soft" in row and pd.notna(row["soft"]):
+            item["soft"] = float(row["soft"])
+        return item
 
 
 # ---------------------------------------------------------------------------
@@ -338,6 +345,97 @@ def make_loader(
     )
 
 
+
+
+class GroupedBatchSampler(torch.utils.data.Sampler):
+    """Sample batches with several distorted versions of the same content.
+
+    Each epoch cycles through every reference several times, drawing
+    ``per_ref`` images per content and ``refs_per_batch`` contents per batch.
+    This covers the whole dataset (with a small amount of overlap at content
+    boundaries) while guaranteeing that every batch contains multiple
+    distortions of the same reference for the content-grouped ordinal loss.
+    """
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        batch_size: int,
+        refs_per_batch: int = 8,
+        seed: int = 42,
+        drop_last: bool = True,
+    ):
+        self.batch_size = int(batch_size)
+        self.refs_per_batch = max(1, int(refs_per_batch))
+        self.per_ref = max(1, self.batch_size // self.refs_per_batch)
+        self.seed = int(seed)
+        self.drop_last = bool(drop_last)
+        self.groups: Dict[str, List[int]] = {}
+        for i, ref in enumerate(df["ref"].astype(str).tolist()):
+            self.groups.setdefault(ref, []).append(i)
+        self.refs = list(self.groups)
+        self._epoch = 0
+        max_len = max(len(v) for v in self.groups.values())
+        self.passes = int(np.ceil(max_len / self.per_ref))
+        if self.drop_last:
+            per_pass = len(self.refs) // self.refs_per_batch
+        else:
+            per_pass = int(np.ceil(len(self.refs) / self.refs_per_batch))
+        self._len = self.passes * max(1, per_pass)
+
+    def set_epoch(self, epoch: int) -> None:
+        self._epoch = int(epoch)
+
+    def __len__(self) -> int:
+        return self._len
+
+    def __iter__(self):
+        rng = np.random.default_rng(self.seed + self._epoch)
+        pools = {ref: rng.permutation(idx).tolist() for ref, idx in self.groups.items()}
+        ptr = {ref: 0 for ref in self.refs}
+        for _ in range(self.passes):
+            order = rng.permutation(len(self.refs))
+            for start in range(0, len(order), self.refs_per_batch):
+                batch: List[int] = []
+                for ridx in order[start:start + self.refs_per_batch]:
+                    ref = self.refs[ridx]
+                    pool = pools[ref]
+                    if ptr[ref] + self.per_ref > len(pool):
+                        pool = rng.permutation(self.groups[ref]).tolist()
+                        pools[ref] = pool
+                        ptr[ref] = 0
+                    take = min(self.per_ref, len(pool) - ptr[ref])
+                    batch.extend(pool[ptr[ref]:ptr[ref] + take])
+                    ptr[ref] += take
+                if len(batch) < self.batch_size and self.drop_last:
+                    continue
+                rng.shuffle(batch)
+                yield batch
+
+
+def make_grouped_loader(
+    df: pd.DataFrame,
+    transform: Any,
+    batch_size: int,
+    refs_per_batch: int = 8,
+    num_workers: int = 8,
+    drop_last: bool = True,
+    seed: int = 42,
+) -> DataLoader:
+    dataset = IQADataset(df, transform=transform)
+    sampler = GroupedBatchSampler(
+        df, batch_size=batch_size, refs_per_batch=refs_per_batch,
+        seed=seed, drop_last=drop_last,
+    )
+    return DataLoader(
+        dataset,
+        batch_sampler=sampler,
+        num_workers=num_workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=num_workers > 0,
+    )
+
+
 def make_splits_and_loaders(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Convenience constructor used by train/evaluate scripts.
 
@@ -356,6 +454,19 @@ def make_splits_and_loaders(cfg: Dict[str, Any]) -> Dict[str, Any]:
         fold=data_cfg["fold"],
         kfold=data_cfg["kfold"],
     )
+    soft_csv = data_cfg.get("soft_csv")
+    if soft_csv:
+        soft_path = str(soft_csv).format(fold=int(data_cfg.get("fold", 0)))
+        if not os.path.exists(soft_path):
+            raise FileNotFoundError(f"soft-target file not found: {soft_path}")
+        soft = pd.read_csv(soft_path)
+        if "name" not in soft or "soft" not in soft:
+            raise ValueError(f"{soft_path} must contain name and soft columns")
+        train_df = train_df.merge(soft[["name", "soft"]], on="name", how="left")
+        missing = int(train_df["soft"].isna().sum())
+        if missing:
+            raise ValueError(f"{missing} training images have no soft target in {soft_path}")
+        print(f"soft targets: {len(train_df)} images from {soft_path}")
     extra = load_extra_train(cfg, exclude=(data_cfg["dataset"],))
     if len(extra):
         train_df = pd.concat([train_df, extra], ignore_index=True)
@@ -374,10 +485,19 @@ def make_splits_and_loaders(cfg: Dict[str, Any]) -> Dict[str, Any]:
     bs = int(cfg["train"]["batch_size"])
     nw = int(data_cfg["num_workers"])
     seed = int(cfg["experiment"]["seed"])
+    if bool(data_cfg.get("grouped_batch", False)):
+        train_loader = make_grouped_loader(
+            train_df, train_tf, bs,
+            refs_per_batch=int(data_cfg.get("refs_per_batch", 8)),
+            num_workers=nw, drop_last=cfg["train"]["drop_last"], seed=seed,
+        )
+    else:
+        train_loader = make_loader(
+            train_df, train_tf, bs, nw, shuffle=True,
+            drop_last=cfg["train"]["drop_last"], seed=seed,
+        )
     loaders = {
-        "train": make_loader(
-            train_df, train_tf, bs, nw, shuffle=True, drop_last=cfg["train"]["drop_last"], seed=seed
-        ),
+        "train": train_loader,
         "val": make_loader(val_df, eval_tf, bs, nw, shuffle=False),
         "test": make_loader(test_df, eval_tf, bs, nw, shuffle=False),
     }

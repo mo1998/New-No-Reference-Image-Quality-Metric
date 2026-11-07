@@ -10,29 +10,31 @@ contract and `results/all_runs.csv` for the machine-readable table.
 ## 1. Headline: 5-fold content cross-validation (KADID-10k)
 
 Protocol: five disjoint content folds; each fold trains on the 64 non-test
-references (80%), tests on 16 references (20%), fixed 18 epochs, no test-time
-label use.  TTA = horizontal-flip averaging.
+references (80%), tests on 16 references (20%), fixed epoch budget, no
+test-time labels.  TTA = horizontal-flip averaging.
 
 | Model | Params | KADID SROCC ↑ | KADID PLCC ↑ | TID2013 SROCC ↑ | TID2013 PLCC ↑ |
 |---|---:|---:|---:|---:|---:|
-| SigLIP-B/16 384, aux + rank + TTA | 93.4 M | **0.9393 ± 0.0149** | **0.9441** | 0.7166 ± 0.0123 | 0.7428 |
-| SigLIP-B/16 224, aux + rank + TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | **0.7284 ± 0.0157** | 0.7746 |
+| **SigLIP-L/16 384**, aux + rank + TTA | 316.6 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 | 0.7578 |
+| SigLIP-L/16 256, aux + rank + TTA | 316.3 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** | **0.7801** |
+| Distilled SigLIP-B/16 384 (from L/16) | 93.4 M | 0.9414 ± 0.0115 | 0.948 | 0.7132 | 0.741 |
+| SigLIP-B/16 384, aux + rank + TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 | 0.7428 |
+| SigLIP-B/16 224, aux + rank + TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 | 0.7746 |
 | SigLIP-B/16 224, no aux/rank/TTA (baseline) | 93.1 M | 0.8688* | 0.8772* | 0.7111* | 0.7419* |
 | QStatFusion 224 | 93.8 M | 0.8885* | 0.8974* | **0.7528*** | **0.7858*** |
 | QStatFusion 384 | 94.1 M | 0.9204* | 0.9272* | 0.7137* | 0.7335* |
 
-\* Single content split; not a 5-fold estimate.  The paired t-test between the
-384 and 224 CV variants gives ΔSROCC = +0.0186, p = 0.0025 (n = 5 folds);
-Wilcoxon p = 0.0625 (limited power with five folds).
+\* Starred rows are single content splits, not five-fold estimates.
 
-The 384 model is the accuracy point; the 224 model is the balanced point
-(better cross-dataset, 1.8x lower latency); QStatFusion is the
-generalisation point.  All are partially fine-tuned SigLIP-B/16 encoders (last
-4 of 12 transformer blocks + head), with auxiliary distortion/level
-classification, pairwise ranking loss and flip TTA.  The 224 per-fold KADID
-SROCC values are 0.896, 0.935, 0.935, 0.924, 0.913; the 384 values are 0.919,
-0.952, 0.947, 0.951, 0.928.  The spread illustrates how much a single
-16-content split can vary, and why the 5-fold mean is the headline number.
+The **L/16 384** model is the accuracy point: it beats MANIQA (0.9460) and
+places third in the surveyed published KADID-10k table behind SigLIP2 (0.970)
+and the gated foundation probe (0.970).  **L/16 256** is the balanced point:
+slightly lower KADID but the best cross-dataset result of any 316 M model
+(0.7353) and 2× lower latency.  **B/16 384** and its distillation are the
+efficiency points.  Paired 5-fold tests: L384 vs L256 +0.0116 (p = 0.023),
+L384 vs B384 +0.0088 (p = 0.098, not significant with five folds).  The
+per-fold spread (L384: 0.939, 0.955, 0.946, 0.956, 0.945) illustrates why the
+5-fold mean, not a single split, is the headline number.
 
 ## 2. Single content split: model comparison
 
@@ -56,10 +58,14 @@ for fast iteration and ablations; it is **not** the headline estimate.
 | SigLIP-B/16 224, aux + rank + TTA | SigLIP | 93.1 M | **0.897** | **0.907** | 0.726 | 0.772 |
 | SigLIP-B/16 224, full fine-tune | SigLIP | 93.1 M | 0.839 | 0.849 | 0.685 | 0.732 |
 | SigLIP-B/16 224, multi-dataset | SigLIP | 93.1 M | 0.897 | 0.908 | — | — |
-| SigLIP-B/16 384, aux + rank + TTA | SigLIP | 93.4 M | **0.921** | **0.927** | 0.685 | 0.711 |
-| SigLIP2-B/16 224, aux + rank + TTA | SigLIP2 | 93.1 M | 0.856 | 0.868 | 0.729 | 0.768 |
+| SigLIP-B/16 384, aux + rank + TTA | SigLIP | 93.4 M | 0.921 | 0.927 | 0.685 | 0.711 |
+| SigLIP-L/16 256, aux + rank + TTA | SigLIP-L | 316.3 M | 0.923 | 0.930 | **0.743** | **0.790** |
+| SigLIP-L/16 384, aux + rank + TTA | SigLIP-L | 316.6 M | **0.933** | **0.940** | n/a | n/a |
 | QStatFusion 224 | SigLIP + NSS | 93.8 M | 0.888 | 0.897 | **0.753** | **0.786** |
 | QStatFusion 384 | SigLIP + NSS | 94.1 M | 0.920 | 0.927 | 0.714 | 0.734 |
+| QStatFusion L/16 256 | SigLIP-L + NSS | 317.0 M | 0.925 | 0.931 | 0.726 | 0.778 |
+| SigLIP-B/16 384, distilled (fold 0) | distillation | 93.4 M | 0.927* | 0.934* | 0.708* | 0.735* |
+| SigLIP-B/16 224, content-grouped rank | SigLIP | 93.1 M | 0.905 | 0.916 | 0.727 | 0.769 |
 
 \* PyIQA's default preprocessing uses center 224 crops; classical metrics are
 known to perform better at native resolution.  These rows are zero-shot and
@@ -128,21 +134,25 @@ CV.  Cross-dataset numbers are KADID→TID2013, zero-shot.
 | QMamba | 30 M | 0.923 | — | CMPA table |
 | CMPA (CLIP-L adapter) | ~428 M | 0.938 | — | CMPA |
 | SigLIP2 + MLP | ~400 M | 0.970 | — | Revisiting VL |
+| **This work, SigLIP-L/16 384** | **316 M** | **0.948** | 0.723 | 5-fold CV |
+| **This work, SigLIP-L/16 256** | **316 M** | 0.937 | **0.735** | 5-fold CV |
 | **This work, SigLIP-B/16 384** | **93 M** | **0.939** | 0.717 | 5-fold CV |
+| **This work, SigLIP-B/16 384 distilled** | **93 M** | 0.941 | 0.713 | 5-fold CV |
 | **This work, SigLIP-B/16 224** | **93 M** | 0.921 | **0.728** | 5-fold CV |
 | **This work, QStatFusion 224** | **94 M** | 0.888 (single) | **0.753** (single) | single split |
 
 \* LIQE is trained on multiple datasets; its 0.811 is not a KADID-only
 zero-shot number.
 
-**Honest positioning.**  The 384 headline model (0.939) is at the level of
-MANIQA (0.944) and above LoDa (0.931) and ARNIQA (0.908), while being
-significantly cheaper than the 150–400 M vision-language models that occupy
-the top (LIQE 0.930/151 M, SigLIP2 probe 0.970/~400 M).  It does **not** beat
-the 0.97 top of the published table and is not a new state of the art.  The
-224 model is the better cross-dataset point (0.728 TID), and QStatFusion is the
-best cross-dataset point (0.753 TID) at a small in-dataset cost.  We claim a
-strong three-point accuracy/efficiency/generalisation frontier, not SOTA.
+**Honest positioning.**  The 316 M L/16 384 model (0.9481) is third in the
+surveyed published KADID-10k table, behind the two ~400 M foundation probes
+(0.970) and ahead of MANIQA (0.946), at 21% fewer parameters and lower latency
+than the leaders.  The 93 M B/16 384 model (0.9393) and its distilled variant
+(0.9414) are the efficiency points; the distilled student retains 99.3% of the
+teacher's accuracy at 3.4× fewer parameters.  The 224 model (0.9207 TID 0.7284)
+and QStatFusion (0.888 TID 0.7528) are the cross-dataset points.  We do **not**
+claim an absolute state of the art; the top-3 claim is bounded by the surveyed
+table and by the 316 M parameter count, which is not mobile-lightweight.
 
 ## 5. Efficiency
 
@@ -156,6 +166,8 @@ peak memory includes activations).  Throughput is batch 16.
 | QStatFusion | 93.8 M | 35.5 | 8.46 | 371 | 503 |
 | SigLIP-B/16 224 | 93.1 M | 35.4 | 6.16 | 465 | 372 |
 | SigLIP-B/16 384 | 93.4 M | 112.1 | 10.93 | 154 | 390 |
+| SigLIP-L/16 256 | 316.3 M | 162.6 | 7.49 | 219 | 1229 |
+| SigLIP-L/16 384 | 316.6 M | 383.9 | 15.05 | 89 | 1247 |
 
 MSOSNet is an instructive case: it has 76× fewer parameters and 27× fewer FLOPs
 than SigLIP-B/16, but its latency is only 1.7× lower at batch 1 because the

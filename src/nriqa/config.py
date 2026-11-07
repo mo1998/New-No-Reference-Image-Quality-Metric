@@ -86,6 +86,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "bootstrap": 1000,
         "report_ci": True,
         "tta": False,
+        "tta_mode": "flip",  # flip | multicrop | both | none
     },
     "logging": {
         "tensorboard": True,

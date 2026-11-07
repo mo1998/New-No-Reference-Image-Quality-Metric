@@ -1,0 +1,17 @@
+include: siglip_b16_384_kadid.yaml
+experiment:
+  name: siglip_b16_384_distill
+data:
+  soft_csv: "teacher_preds/fold{fold}.csv"
+train:
+  epochs: 10
+  loss:
+    mse: 1.0
+    plcc: 0.1
+    rank: 0.0
+    distill: 0.5
+    margin: 0.05
+    aux_distortion: 0.2
+    aux_level: 0.1
+  early_stop:
+    patience: 4

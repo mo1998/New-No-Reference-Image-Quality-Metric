@@ -1,0 +1,7 @@
+include: siglip_l16_384_kadid.yaml
+experiment:
+  name: siglip_l16_384_e16
+train:
+  epochs: 16
+  early_stop:
+    patience: 5

@@ -23,22 +23,29 @@ families of models against strong baselines:
 3. **Partially fine-tuned foundation encoders** (SigLIP-B/16, CLIP-B/16,
    DINOv2-S, SigLIP2-B) with distortion-aware auxiliary heads.
 
-**Best KADID-10k result:** SigLIP-B/16 at 384 px with auxiliary
-distortion/level heads, pairwise ranking loss and flip TTA: **SROCC
-0.9393 ± 0.0149** over five content folds, PLCC 0.9441, with 93.4 M parameters
-and 10.9 ms per image on an RTX 4090.  The 224 px variant is the balanced
-point: **0.9207 ± 0.0166** KADID and **0.7284 ± 0.0157** cross-dataset at
-6.2 ms.  The 384/224 difference is significant in a paired t-test (p = 0.0025).
+**Best KADID-10k result:** SigLIP-L/16 at 384 px with auxiliary distortion/level
+heads, pairwise ranking loss and flip TTA: **SROCC 0.9481 ± 0.0074** over five
+content folds, PLCC 0.9526, with 316.6 M parameters and 15.1 ms per image on an
+RTX 4090.  This is **third in the surveyed published KADID-10k table**, behind
+the two ~400 M foundation probes at 0.970 and ahead of MANIQA (0.946).  The
+256 px L/16 variant is the balanced point: **0.9365 ± 0.0074** KADID and
+**0.7353 ± 0.0084** cross-dataset at 7.5 ms.  The 384/256 difference is
+significant (paired p = 0.023), while L384 vs the 93 M B/384 is not
+(+0.0088, p = 0.098).
 
 **Best cross-dataset result:** QStatFusion, a gated fusion of SigLIP-B/16 and
 the MSOSNet statistical branch: **TID2013 SROCC 0.753**, significantly better
 than SigLIP alone (0.726, paired bootstrap p = 0.003), at 93.8 M parameters.
 
-**Honest positioning:** the headline model is competitive with 24–48 M
-specialised NR-IQA networks (MANIQA 0.944, LoDa 0.931, ARNIQA 0.908) and far
-cheaper than the 150–400 M vision-language models at the top of the published
-table (SigLIP2 probe 0.970).  It does **not** establish a new state of the art
-on KADID-10k.  We report this explicitly rather than overclaiming.
+**Honest positioning:** 0.9481 places the model third among the single-model
+methods surveyed in `docs/literature_review.md` (SigLIP2/B_Gated 0.970, MANIQA
+0.946), at 316 M parameters and 15.1 ms — about 21% fewer parameters and lower
+latency than the two leaders.  It is **not** an absolute state of the art:
+other 2026 methods may be unpublished or unreviewed, and 316 M is not
+"lightweight" by mobile standards.  The 93 M distilled student reaches
+**0.9414 ± 0.0115** (99.3% of the teacher's accuracy at 3.4× fewer parameters),
+and the 93 M B/16 model reaches 0.9393.  We report the top-3 claim with these
+qualifications rather than as an unqualified SOTA.
 
 **Key findings.**
 
@@ -47,6 +54,9 @@ on KADID-10k.  We report this explicitly rather than overclaiming.
   aux + rank + TTA recipe is statistically significant (+0.028, p = 0.003).
 * Partial fine-tuning is essential: full fine-tuning overfits 57 contents and
   loses 0.03 KADID SROCC.
+* Scaling the foundation encoder from B/16 (93 M) to L/16 (316 M) adds
+  +0.009 KADID (p = 0.098) and a 93 M distilled student recovers 0.9414, i.e.
+  99.3% of the teacher's accuracy at 3.4× fewer parameters.
 * Higher resolution helps in-dataset (+0.024) but hurts cross-dataset
   (−0.041); the effect is not statistically significant on the single split.
 * The NSS statistical branch improves cross-dataset generalisation
@@ -115,22 +125,26 @@ references.  Full per-fold values are in `results/cv/*.json`.
 
 | Model | Params | SROCC | PLCC | TID2013 SROCC |
 |---|---:|---:|---:|---:|
-| **SigLIP-B/16 384 + aux/rank/TTA** | 93.4 M | **0.9393 ± 0.0149** | **0.9441** | 0.7166 ± 0.0123 |
-| SigLIP-B/16 224 + aux/rank/TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | **0.7284 ± 0.0157** |
+| **SigLIP-L/16 384 + aux/rank/TTA** | 316.6 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 |
+| SigLIP-L/16 256 + aux/rank/TTA | 316.3 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** |
+| Distilled SigLIP-B/16 384 | 93.4 M | 0.9414 ± 0.0115 | 0.948 | 0.7132 |
+| SigLIP-B/16 384 + aux/rank/TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 |
+| SigLIP-B/16 224 + aux/rank/TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 |
 | QStatFusion 224 | 93.8 M | 0.8885* | 0.8974* | **0.7528*** |
 | QStatFusion 384 | 94.1 M | 0.9204* | 0.9272* | 0.7137* |
 
-\* Single content split, not a 5-fold estimate.
+\* Starred rows are single content splits, not 5-fold estimates.
 
 ### 4.2 Single-split model comparison
 
 See `docs/benchmarks.md` §2.  The ordering is:
 
 ```
-SigLIP-384 (0.921) > SigLIP-224+aux (0.897) > SigLIP-224 (0.869)
-> QStatFusion (0.888) > ResNet-18 (0.769) > MSOSNet (0.721)
-> MobileNetV3 (0.721) > TinyCNN (0.711) > ARNIQA zero-shot (0.737)
-> LIQE zero-shot (0.727)
+L/16-384 (0.933) > QStat-L/16-256 (0.925) > L/16-256 (0.923)
+> B/16-384 (0.921) > content-rank B/16-224 (0.905)
+> B/16-224+aux (0.897) > QStat-B/16 (0.888) > B/16-224 (0.869)
+> ResNet-18 (0.769) > ARNIQA zero-shot (0.737) > MSOSNet (0.721)
+> MobileNetV3 (0.721) > TinyCNN (0.711) > LIQE zero-shot (0.727)
 ```
 
 Cross-dataset ordering is different:
@@ -153,12 +167,16 @@ measured with `src/nriqa/inference.py`:
 | QStatFusion | 93.8 M | 35.5 | 8.46 | 371 | 503 |
 | SigLIP-B/16 224 | 93.1 M | 35.4 | 6.16 | 465 | 372 |
 | SigLIP-B/16 384 | 93.4 M | 112.1 | 10.93 | 154 | 390 |
+| SigLIP-L/16 256 | 316.3 M | 162.6 | 7.49 | 219 | 1229 |
+| SigLIP-L/16 384 | 316.6 M | 383.9 | 15.05 | 89 | 1247 |
 
-The 224 px headline model is the best accuracy/latency point: 6.2 ms per image
-and 372 MB at batch 1 still fit comfortably in a real-time budget.  The 384 px
-variant doubles latency and triples FLOPs for +0.024 single-split SROCC and
-−0.041 TID SROCC, so it is only attractive when the deployment distribution
-matches KADID.
+The **L/16 256** model is the best accuracy/latency point: 7.5 ms per image,
+1229 MB, 0.9365 KADID and 0.7353 TID.  The L/16 384 accuracy point doubles
+latency (15.1 ms) and triples FLOPs for +0.0116 KADID and −0.012 TID.  The
+93 M B/16 384 model is the deployment point: 10.9 ms, 390 MB, 0.9393 KADID;
+its distilled variant reaches 0.9414 at the same cost.  The from-scratch
+MSOSNet is the smallest (0.30 M) and fastest in FLOPs but not in batch-1
+latency, because its statistical pooling is launch-bound.
 
 ### 4.4 Ablations
 
@@ -190,6 +208,8 @@ Paired content-level bootstrap (300–2000 resamples):
 |---|---|---:|---:|
 | +aux/rank/TTA vs baseline (single split) | SROCC | +0.028 | 0.003 |
 | 384 vs 224 (paired 5-fold t-test) | SROCC | +0.0186 | 0.0025 |
+| SigLIP-L384 vs L256 (paired 5-fold) | SROCC | +0.0116 | 0.023 |
+| SigLIP-L384 vs B384 (paired 5-fold) | SROCC | +0.0088 | 0.098 |
 | SigLIP2 vs SigLIP (single split) | SROCC | −0.041 | 0.003 |
 | QStat vs SigLIP (single split) | KADID SROCC | −0.008 | 0.073 |
 | QStat vs SigLIP (TID2013) | TID SROCC | +0.027 | 0.003 |
@@ -258,13 +278,22 @@ remaining failure modes and motivate a colour-aware or frequency-aware branch.
 
 ## 8. Conclusion and future work
 
-The project delivers a rigorous, reproducible NR-IQA framework and a strong
-three-point frontier: 0.939 KADID SROCC at 93 M parameters and 10.9 ms, 0.921
-KADID plus 0.728 cross-dataset at 6.2 ms, and 0.753 cross-dataset at 94 M with
-QStatFusion.  The gains from distortion-aware training (+0.028, p = 0.003),
-higher resolution (+0.019, p = 0.0025) and NSS fusion on TID (+0.027,
-p = 0.003) are statistically supported.  The work does not establish a new
-state of the art, and we say so explicitly.
+The project delivers a rigorous, reproducible NR-IQA framework and a
+four-point frontier:
+
+* **0.9481 ± 0.0074** KADID at 316 M / 15.1 ms (third in the surveyed published
+  table, behind the two ~400 M foundation probes at 0.970);
+* **0.9365 ± 0.0074** KADID and **0.7353 ± 0.0084** TID at 316 M / 7.5 ms
+  (balanced point);
+* **0.9414 ± 0.0115** KADID from a 93 M distilled student (99.3% of the
+  teacher at 3.4× fewer parameters) and 0.9393 from the 93 M base model;
+* **0.7528** TID from 94 M QStatFusion (best cross-dataset).
+
+The gains from distortion-aware training (+0.028, p = 0.003), L/16 384 vs 256
+(+0.0116, p = 0.023) and NSS fusion on TID (+0.027, p = 0.003) are
+statistically supported.  The work does not establish an absolute state of the
+art; the top-3 claim is bounded by the surveyed table and by the 316 M
+parameter count.
 
 The most promising next steps are:
 
