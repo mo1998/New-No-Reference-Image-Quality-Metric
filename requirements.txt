@@ -1,7 +1,4 @@
-# Project 28 — Python dependencies (starter)
-# Course rule: pin exact versions once the environment is set up:
-#   pip freeze > requirements.lock.txt
-
+# Project 28 — Python dependencies
 # Core scientific stack
 numpy
 scipy
@@ -11,15 +8,21 @@ scikit-image
 opencv-python
 
 # Deep learning (install the CPU or CUDA build matching your machine)
-torch
+torch>=2.1
 torchvision
 
 # IQA baselines / metrics
 lpips
 pyiqa
+timm==0.9.16
 
-# Testing
+# Experiment tooling
+pyyaml
+scikit-learn
+tqdm
+tensorboard
 pytest
-
-# Notebooks
 jupyterlab
+
+# Optional: SigLIP2 (needs torch>=2.2)
+# transformers>=4.52

@@ -344,6 +344,8 @@ class Trainer:
 
         summary: Dict[str, Any] = {
             "experiment": self.cfg["experiment"]["name"],
+            "model": self.cfg["model"]["name"],
+            "model_kwargs": self.cfg["model"].get("kwargs", {}),
             "run_dir": self.out_dir,
             "split": self.summary_data,
             "params": self.n_params,

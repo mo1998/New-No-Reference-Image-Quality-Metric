@@ -1,0 +1,31 @@
+{
+  "checkpoint": "/home/mrazek/New-No-Reference-Image-Quality-Metric/runs/20261107-202620_msosnet_holdout40/best.pt",
+  "model": "msosnet",
+  "config": "msosnet_holdout40",
+  "params": 301586,
+  "input_size": 224,
+  "device": "cuda:0",
+  "gpu_name": "NVIDIA GeForce RTX 4090",
+  "cpu_name": "x86_64",
+  "gpu_batch1": {
+    "latency_ms_mean": 3.24270365992561,
+    "latency_ms_median": 3.7097475142218173,
+    "latency_ms_p95": 3.763937106123194,
+    "throughput_img_s": 308.38463975549985
+  },
+  "gpu_batch16": {
+    "latency_ms_mean": 7.258807491355886,
+    "latency_ms_median": 8.387549489270896,
+    "latency_ms_p95": 8.750748523743823,
+    "throughput_img_s": 2204.218808537562
+  },
+  "flops": 130702080.0,
+  "peak_memory_mb_batch1": 144.87109375,
+  "peak_memory_mb_batch16": 185.87548828125,
+  "cpu_batch1": {
+    "latency_ms_mean": 68.44443041676034,
+    "latency_ms_median": 38.911160081624985,
+    "latency_ms_p95": 177.868727443274,
+    "throughput_img_s": 14.610392604788554
+  }
+}

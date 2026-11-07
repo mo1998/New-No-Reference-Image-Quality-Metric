@@ -1,0 +1,13 @@
+include: siglip_b16_aux_kadid.yaml
+experiment:
+  name: siglip_b16_384_kadid
+data:
+  size: 384
+model:
+  kwargs:
+    model_name: vit_base_patch16_siglip_384
+    freeze_blocks: 8
+train:
+  batch_size: 16
+  epochs: 12
+  lr: 1.5e-4

@@ -1,0 +1,14 @@
+include: qstat_fusion_kadid.yaml
+experiment:
+  name: qstat_fusion_384_kadid
+data:
+  size: 384
+model:
+  kwargs:
+    model_name: vit_base_patch16_siglip_384
+train:
+  batch_size: 16
+  lr: 1.5e-4
+  epochs: 12
+  early_stop:
+    patience: 5

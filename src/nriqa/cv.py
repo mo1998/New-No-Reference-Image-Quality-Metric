@@ -33,6 +33,7 @@ def run_fold(
     device: str,
     epochs: int | None,
     python: str,
+    overrides: list[str] | None = None,
 ) -> Dict[str, Any]:
     run_name = f"{name}_f{fold}"
     cmd = [
@@ -48,6 +49,8 @@ def run_fold(
     ]
     if epochs is not None:
         cmd += ["--set", f"train.epochs={epochs}"]
+    for item in overrides or []:
+        cmd += ["--set", item]
     env = dict(os.environ)
     env["PYTHONPATH"] = "src" + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     print("running:", " ".join(cmd), flush=True)
@@ -124,6 +127,8 @@ def main(argv=None) -> int:
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--python", default=sys.executable)
     ap.add_argument("--folds", nargs="*", type=int, default=None)
+    ap.add_argument("--set", dest="overrides", action="append", default=[],
+                    help="Extra run.py overrides applied to every fold")
     args = ap.parse_args(argv)
 
     name = args.name or os.path.splitext(os.path.basename(args.config))[0]
@@ -133,7 +138,8 @@ def main(argv=None) -> int:
     summaries = []
     for fold in folds:
         summaries.append(
-            run_fold(args.config, fold, args.k, name, args.output_root, args.device, args.epochs, args.python)
+            run_fold(args.config, fold, args.k, name, args.output_root, args.device,
+                     args.epochs, args.python, args.overrides)
         )
     agg = aggregate(summaries)
     agg["name"] = name

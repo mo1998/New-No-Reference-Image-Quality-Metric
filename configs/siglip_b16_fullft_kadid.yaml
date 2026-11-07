@@ -1,0 +1,13 @@
+include: siglip_b16_aux_kadid.yaml
+experiment:
+  name: siglip_b16_fullft_kadid
+model:
+  kwargs:
+    freeze_blocks: 0
+    drop_path: 0.2
+train:
+  epochs: 16
+  lr: 5.0e-5
+  weight_decay: 1.0e-1
+  early_stop:
+    patience: 5

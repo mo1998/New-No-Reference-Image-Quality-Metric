@@ -1,0 +1,31 @@
+{
+  "checkpoint": "/home/mrazek/New-No-Reference-Image-Quality-Metric/runs/20261107-210332_qstat_fusion_kadid/best.pt",
+  "model": "qstat_fusion",
+  "config": "qstat_fusion_kadid",
+  "params": 93764467,
+  "input_size": 224,
+  "device": "cuda:0",
+  "gpu_name": "NVIDIA GeForce RTX 4090",
+  "cpu_name": "x86_64",
+  "gpu_batch1": {
+    "latency_ms_mean": 7.182766317855567,
+    "latency_ms_median": 8.464596001431346,
+    "latency_ms_p95": 8.579257695237175,
+    "throughput_img_s": 139.2221263712993
+  },
+  "gpu_batch16": {
+    "latency_ms_mean": 43.181275219346084,
+    "latency_ms_median": 44.886215997394174,
+    "latency_ms_p95": 48.90996284666471,
+    "throughput_img_s": 370.5309747969573
+  },
+  "flops": 35547950080.0,
+  "peak_memory_mb_batch1": 502.97314453125,
+  "peak_memory_mb_batch16": 542.083984375,
+  "cpu_batch1": {
+    "latency_ms_mean": 1077.8302021247025,
+    "latency_ms_median": 1079.3512800009921,
+    "latency_ms_p95": 2636.104422272183,
+    "throughput_img_s": 0.9277899227807147
+  }
+}

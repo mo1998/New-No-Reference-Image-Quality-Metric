@@ -1,0 +1,31 @@
+include: base.yaml
+experiment:
+  name: siglip2_b16_kadid
+data:
+  norm: none
+model:
+  name: siglip2_regressor
+  pretrained: true
+  kwargs:
+    model_name: google/siglip2-base-patch16-224
+    freeze_blocks: 8
+    head_hidden: 256
+    dropout: 0.2
+    aux_heads: true
+train:
+  epochs: 20
+  batch_size: 32
+  lr: 2.0e-4
+  weight_decay: 5.0e-2
+  warmup_epochs: 2
+  early_stop:
+    patience: 6
+  loss:
+    mse: 1.0
+    plcc: 0.2
+    rank: 0.2
+    margin: 0.05
+    aux_distortion: 0.2
+    aux_level: 0.1
+eval:
+  tta: true

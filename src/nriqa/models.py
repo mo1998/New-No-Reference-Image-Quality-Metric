@@ -221,9 +221,10 @@ class MSOSNet(nn.Module):
             nn.Conv2d(cw * 2, cw * 4, 3, stride=2, padding=1), nn.BatchNorm2d(cw * 4), nn.GELU(),
         )
         ctx_dim = cw * 8
+        self.out_dim = embed_dim + 32 + ctx_dim
         self.head = nn.Sequential(
-            nn.LayerNorm(embed_dim + 32 + ctx_dim),
-            nn.Linear(embed_dim + 32 + ctx_dim, 128),
+            nn.LayerNorm(self.out_dim),
+            nn.Linear(self.out_dim, 128),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(128, 1),
@@ -527,6 +528,181 @@ class TimmRegressor(nn.Module):
         return score, aux
 
 
+
+
+# ---------------------------------------------------------------------------
+# QStatFusion: statistical + foundation gated fusion
+# ---------------------------------------------------------------------------
+class QStatFusion(nn.Module):
+    """Gated fusion of NSS statistics and a compact foundation backbone.
+
+    The two branches are complementary by construction:
+
+    * the foundation branch (SigLIP/CLIP) provides semantic context and
+      high-level degradation patterns but suppresses fine perceptual cues;
+    * the MSOSNet branch provides explicit multi-scale local-normalisation
+      statistics that are sensitive to blur, noise, blocking and ringing.
+
+    A per-image sigmoid gate decides how much to trust each branch.  The
+    foundation branch can be partially frozen exactly like ``TimmRegressor``.
+    """
+
+    def __init__(
+        self,
+        model_name: str = "vit_base_patch16_siglip_224",
+        pretrained: bool = True,
+        freeze_blocks: int = 8,
+        drop_path: float = 0.1,
+        stats_widths: Tuple[int, ...] = (16, 24, 32, 40),
+        stats_scales: int = 4,
+        fusion_dim: int = 256,
+        dropout: float = 0.2,
+        aux_heads: bool = False,
+        num_distortions: int = 25,
+        num_levels: int = 5,
+        **_,
+    ):
+        super().__init__()
+        self.foundation = TimmRegressor(
+            model_name=model_name,
+            pretrained=pretrained,
+            freeze_blocks=freeze_blocks,
+            drop_path=drop_path,
+            head_hidden=256,
+            dropout=dropout,
+            aux_heads=False,
+        )
+        self.stats = MSOSNet(
+            widths=stats_widths, scales=stats_scales, embed_dim=64, aux_heads=False
+        )
+        stats_dim = int(self.stats.out_dim)
+        self.foundation_proj = nn.Sequential(
+            nn.LayerNorm(self.foundation.feat_dim),
+            nn.Linear(self.foundation.feat_dim, fusion_dim),
+            nn.GELU(),
+        )
+        self.stats_proj = nn.Sequential(
+            nn.LayerNorm(stats_dim),
+            nn.Linear(stats_dim, fusion_dim),
+            nn.GELU(),
+        )
+        self.gate = nn.Sequential(
+            nn.Linear(fusion_dim * 2, fusion_dim // 2), nn.GELU(),
+            nn.Linear(fusion_dim // 2, 1),
+        )
+        self.head = nn.Sequential(
+            nn.LayerNorm(fusion_dim), nn.Linear(fusion_dim, 128), nn.GELU(),
+            nn.Dropout(dropout), nn.Linear(128, 1),
+        )
+        self.aux_heads = bool(aux_heads)
+        if self.aux_heads:
+            self.dist_head = nn.Linear(fusion_dim, num_distortions)
+            self.level_head = nn.Linear(fusion_dim, num_levels)
+
+    def forward_features(self, x: torch.Tensor):
+        f_b = self.foundation.forward_features(x)
+        f_s_raw, _ = self.stats.forward_features(x)
+        f_b = self.foundation_proj(f_b)
+        f_s = self.stats_proj(f_s_raw)
+        g = torch.sigmoid(self.gate(torch.cat([f_b, f_s], dim=1)))
+        fused = g * f_b + (1.0 - g) * f_s
+        return fused
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.forward_features(x)).squeeze(1)
+
+    def forward_aux(self, x: torch.Tensor):
+        f = self.forward_features(x)
+        score = self.head(f).squeeze(1)
+        aux = {}
+        if self.aux_heads:
+            aux["dist_logits"] = self.dist_head(f)
+            aux["level_logits"] = self.level_head(f)
+        return score, aux
+
+
+
+
+# ---------------------------------------------------------------------------
+# HuggingFace SigLIP2 vision encoder
+# ---------------------------------------------------------------------------
+class Siglip2Regressor(nn.Module):
+    """SigLIP2 vision encoder with a small quality head.
+
+    The text tower is discarded; only the 93 M-parameter vision encoder is kept.
+    Input normalisation (mean=std=0.5) is applied inside the model so the data
+    pipeline can stay in ``[0,1]``.  The patch embedding and the first
+    ``freeze_blocks`` transformer blocks are frozen by default.
+    """
+
+    def __init__(
+        self,
+        model_name: str = "google/siglip2-base-patch16-224",
+        freeze_blocks: int = 8,
+        head_hidden: int = 256,
+        dropout: float = 0.2,
+        aux_heads: bool = False,
+        num_distortions: int = 25,
+        num_levels: int = 5,
+        **_,
+    ):
+        super().__init__()
+        import gc
+
+        from transformers import SiglipModel
+
+        full = SiglipModel.from_pretrained(model_name)
+        self.vision = full.vision_model
+        del full
+        gc.collect()
+
+        self.target_size = int(self.vision.config.image_size)
+        self.feat_dim = int(self.vision.config.hidden_size)
+        self.register_buffer("input_mean", torch.tensor(0.5).view(1, 1, 1, 1))
+        self.register_buffer("input_std", torch.tensor(0.5).view(1, 1, 1, 1))
+        self.head = nn.Sequential(
+            nn.LayerNorm(self.feat_dim),
+            nn.Linear(self.feat_dim, head_hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(head_hidden, 1),
+        )
+        self.aux_heads = bool(aux_heads)
+        if self.aux_heads:
+            self.dist_head = nn.Linear(self.feat_dim, num_distortions)
+            self.level_head = nn.Linear(self.feat_dim, num_levels)
+        self.freeze_blocks = int(freeze_blocks)
+        self._apply_freezing()
+
+    def _apply_freezing(self) -> None:
+        for p in self.vision.parameters():
+            p.requires_grad_(True)
+            p.requires_grad_(False) if False else None
+        for name, p in self.vision.named_parameters():
+            if name.startswith("embeddings"):
+                p.requires_grad_(False)
+            elif name.startswith("encoder.layers."):
+                idx = int(name.split(".")[2])
+                if self.freeze_blocks < 0 or idx < self.freeze_blocks:
+                    p.requires_grad_(False)
+
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        x = (x - self.input_mean) / self.input_std
+        return self.vision(pixel_values=x).pooler_output
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.forward_features(x)).squeeze(1)
+
+    def forward_aux(self, x: torch.Tensor):
+        f = self.forward_features(x)
+        score = self.head(f).squeeze(1)
+        aux = {}
+        if self.aux_heads:
+            aux["dist_logits"] = self.dist_head(f)
+            aux["level_logits"] = self.level_head(f)
+        return score, aux
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
@@ -541,6 +717,8 @@ _MODEL_REGISTRY = {
     "resnet50": PretrainedBackbone,
     "efficientnet_b0": PretrainedBackbone,
     "timm_regressor": TimmRegressor,
+    "qstat_fusion": QStatFusion,
+    "siglip2_regressor": Siglip2Regressor,
 }
 
 
