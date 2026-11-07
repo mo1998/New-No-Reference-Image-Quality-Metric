@@ -1,0 +1,57 @@
+# Canonical experiment protocol for the NR-IQA project.
+# Every headline result uses these settings unless the config says otherwise.
+experiment:
+  name: base
+  seed: 42
+  output_dir: runs
+
+data:
+  dataset: kadid10k
+  root: data/kadid10k
+  size: 224
+  split: holdout          # content-held-out; use kfold for the final table
+  test_frac: 0.2
+  val_frac: 0.1
+  fold: 0
+  kfold: 5
+  num_workers: 8
+  augment: standard
+  norm: none              # raw [0,1] for from-scratch models
+  eval_mode: center
+  eval_datasets: [kadid10k, tid2013]
+  tid_root: data/tid2013
+
+train:
+  epochs: 40
+  batch_size: 64
+  lr: 1.0e-3
+  weight_decay: 5.0e-4
+  optimizer: adamw
+  scheduler: cosine
+  warmup_epochs: 2
+  amp: true
+  grad_clip: 1.0
+  label_norm: zscore
+  loss:
+    mse: 1.0
+    plcc: 0.1
+    rank: 0.0
+    margin: 0.05
+    aux_distortion: 0.0
+    aux_level: 0.0
+  early_stop:
+    patience: 12
+    min_delta: 5.0e-4
+    monitor: val_srocc
+  ema: 0.0
+  drop_last: true
+
+eval:
+  batch_size: 128
+  bootstrap: 500
+  report_ci: true
+
+logging:
+  tensorboard: true
+  save_predictions: true
+  save_checkpoint: true

@@ -23,7 +23,20 @@ data/*
 .vscode/
 .idea/
 .DS_Store
+.archify/
 Thumbs.db
 
 # Session/transcript exports (may contain secrets) - keep out of the repo
 /*.json
+
+# Experiment artifacts (checkpoints, logs, cached features)
+runs/
+runs_*/
+features/
+results/benchmarks/*_predictions.csv
+results/benchmarks/*.json
+results/cv/*_predictions.csv
+
+# Cached model weights
+*.safetensors
+*.bin
