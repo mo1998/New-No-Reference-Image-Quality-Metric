@@ -86,6 +86,7 @@ def compute_loss(
     soft: Optional[torch.Tensor] = None,
     teacher_feat: Optional[torch.Tensor] = None,
     student_proj: Optional[torch.Tensor] = None,
+    aux_mask: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, Dict[str, float]]:
     """Weighted NR-IQA objective; returns (total, detached component dict)."""
     mse = F.mse_loss(pred, target)
@@ -100,7 +101,9 @@ def compute_loss(
     )
     distill = pred.new_tensor(0.0)
     if soft is not None and float(loss_cfg.get("distill", 0.0)) > 0:
-        distill = F.mse_loss(pred, soft)
+        valid = ~torch.isnan(soft)
+        if bool(valid.any()):
+            distill = F.mse_loss(pred[valid], soft[valid])
     feature_distill = pred.new_tensor(0.0)
     if (teacher_feat is not None and student_proj is not None
             and float(loss_cfg.get("feature_distill", 0.0)) > 0):
@@ -125,12 +128,23 @@ def compute_loss(
         w_level = float(loss_cfg.get("aux_level", 0.0))
         if w_dist > 0 and "dist_logits" in aux and dist_type is not None:
             # Dataset distortion ids are 1-based (KADID 1-25, TID2013 1-24);
-            # shift to 0-based class indices.
-            loss_d = F.cross_entropy(aux["dist_logits"], (dist_type.long() - 1).clamp_min(0))
-            total = total + w_dist * loss_d
-            parts["aux_dist"] = float(loss_d.detach())
+            # shift to 0-based class indices.  Extra datasets without distortion
+            # labels (KonIQ) are masked out.
+            logits = aux["dist_logits"]
+            target = (dist_type.long() - 1).clamp_min(0)
+            if aux_mask is not None:
+                logits, target = logits[aux_mask], target[aux_mask]
+            if logits.numel() > 0:
+                loss_d = F.cross_entropy(logits, target)
+                total = total + w_dist * loss_d
+                parts["aux_dist"] = float(loss_d.detach())
         if w_level > 0 and "level_logits" in aux and level is not None:
-            loss_l = F.cross_entropy(aux["level_logits"], (level.long() - 1).clamp_min(0))
-            total = total + w_level * loss_l
-            parts["aux_level"] = float(loss_l.detach())
+            logits = aux["level_logits"]
+            target = (level.long() - 1).clamp_min(0)
+            if aux_mask is not None:
+                logits, target = logits[aux_mask], target[aux_mask]
+            if logits.numel() > 0:
+                loss_l = F.cross_entropy(logits, target)
+                total = total + w_level * loss_l
+                parts["aux_level"] = float(loss_l.detach())
     return total, parts

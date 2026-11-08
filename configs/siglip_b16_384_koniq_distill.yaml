@@ -1,0 +1,19 @@
+include: siglip_b16_384_koniq.yaml
+experiment:
+  name: siglip_b16_384_koniq_distill
+data:
+  soft_csv: "teacher_preds/fold{fold}.csv"
+  teacher_features: "teacher_feats/fold{fold}.npz"
+model:
+  kwargs:
+    distill_dim: 1024
+train:
+  loss:
+    mse: 1.0
+    plcc: 0.1
+    rank: 0.0
+    distill: 0.3
+    feature_distill: 0.2
+    margin: 0.05
+    aux_distortion: 0.2
+    aux_level: 0.1

@@ -37,7 +37,8 @@ A complete, reproducible NR-IQA research framework:
 
 | Model | Params | SROCC ↑ | PLCC ↑ | TID2013 zero-shot SROCC ↑ | Latency (RTX 4090) |
 |---|---:|---:|---:|---:|---:|
-| SigLIP-L/16 384 + aux + rank + TTA | 316 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 | 15.1 ms |
+| **SigLIP-B/16 384 + KADID+KonIQ** | **93.4 M** | **0.9481 ± 0.0096** | **0.9524** | **0.7429 ± 0.0113** | **10.9 ms** |
+| SigLIP-L/16 384 + aux + rank + TTA | 316 M | 0.9481 ± 0.0074 | 0.9526 | 0.7232 ± 0.0205 | 15.1 ms |
 | SigLIP-L/16 256 + aux + rank + TTA | 316 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** | 9.4 ms |
 | SigLIP-B/16 384 + aux + rank + TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 | 10.9 ms |
 | SigLIP-B/16 224 + aux + rank + TTA | 93.1 M | 0.9207 ± 0.0166 | 0.9271 | 0.7284 ± 0.0157 | 6.2 ms |
@@ -129,12 +130,14 @@ python -m venv .venv2
 |---|---|---|---|
 | KADID-10k | 10,125 images + MOS | train / test | <http://database.mmsp-kn.de/kadid-10k-database.html> |
 | TID2013 | 3,000 images + MOS | cross-dataset / extra training | <http://www.ponomarenko.info/tid2013.htm> |
+| KonIQ-10k | 10,073 images + MOS | authentic extra training | <https://doi.org/10.18419/DARUS-2435> |
 
 Expected layout:
 
 ```
 data/kadid10k/{images/, dmos.csv}
 data/tid2013/{distorted_images/, reference_images/, mos_with_names.txt}
+data/koniq/{512x384/, koniq10k_scores_and_distributions.tab}
 ```
 
 ## Evaluation protocol

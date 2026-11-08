@@ -205,20 +205,30 @@ class Trainer:
                     pred, aux = self.model(images), None
                 soft = None
                 if "soft" in batch and float(loss_cfg.get("distill", 0.0)) > 0:
-                    soft = normalize_targets(
-                        batch["soft"].to(self.device, dtype=torch.float32), self.target_stats
+                    soft = batch["soft"].to(self.device, dtype=torch.float32)
+                    soft = torch.where(torch.isnan(soft), soft, normalize_targets(soft, self.target_stats))
+                aux_mask = None
+                if use_aux and "dataset" in batch:
+                    aux_mask = torch.tensor(
+                        [str(d) == "kadid10k" for d in batch["dataset"]],
+                        device=self.device, dtype=torch.bool,
                     )
+                    if bool(aux_mask.all()):
+                        aux_mask = None
                 teacher_feat = None
                 student_proj = None
                 if use_feature and "tfeat" in batch:
-                    teacher_feat = batch["tfeat"].to(self.device, dtype=torch.float32)
-                    student_proj = aux.get("proj") if aux is not None else None
+                    tmask = batch["has_tfeat"].to(self.device).bool()
+                    if bool(tmask.any()):
+                        teacher_feat = batch["tfeat"].to(self.device, dtype=torch.float32)[tmask]
+                        student_proj = aux.get("proj")[tmask] if aux is not None else None
                 loss, parts = compute_loss(
                     pred, target, loss_cfg, aux=aux,
                     dist_type=batch["dist_type"].to(self.device) if use_aux else None,
                     level=batch["level"].to(self.device) if use_aux else None,
                     refs=batch["ref"], soft=soft,
                     teacher_feat=teacher_feat, student_proj=student_proj,
+                    aux_mask=aux_mask,
                 )
             self.scaler.scale(loss).backward()
             if float(tcfg.get("grad_clip", 0.0)) > 0:

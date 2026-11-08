@@ -10,6 +10,7 @@ image-level splits can leak content between train and test.
 |---|---:|---:|---:|---|
 | KADID-10k | 10,125 | 81 | 25 × 5 levels | 1.0 – 4.93 (higher is better) |
 | TID2013 | 3,000 | 25 | 24 × 5 levels | 0.24 – 7.21 (higher is better) |
+| KonIQ-10k | 10,073 | 10,073 (unique) | authentic | 1.0 – 4.31 (higher is better) |
 
 KADID-10k is the primary benchmark.  TID2013 is used for (a) zero-shot
 cross-dataset evaluation of KADID-only models and (b) additional training data
@@ -45,6 +46,10 @@ in the multi-dataset setting.  The two uses are never mixed in one claim.
 * Models trained this way are **not** used for zero-shot KADID→TID claims;
   their TID evaluation is in-domain.  The config disables the cross-dataset
   report for these runs.
+* **KonIQ-10k** is an optional authentic-distortion training set (DaRUS
+  doi:10.18419/DARUS-2435, files 72286 images and 72288 labels, CC BY 4.0).
+  KonIQ has no KADID distortion/level label, so auxiliary heads are masked for
+  KonIQ batches.  KADID and TID test contents are never in KonIQ.
 
 ## 3. Metrics
 

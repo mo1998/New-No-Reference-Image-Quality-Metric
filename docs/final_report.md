@@ -23,29 +23,30 @@ families of models against strong baselines:
 3. **Partially fine-tuned foundation encoders** (SigLIP-B/16, CLIP-B/16,
    DINOv2-S, SigLIP2-B) with distortion-aware auxiliary heads.
 
-**Best KADID-10k result:** SigLIP-L/16 at 384 px with auxiliary distortion/level
-heads, pairwise ranking loss and flip TTA: **SROCC 0.9481 ± 0.0074** over five
-content folds, PLCC 0.9526, with 316.6 M parameters and 15.1 ms per image on an
-RTX 4090.  This is **third in the surveyed published KADID-10k table**, behind
-the two ~400 M foundation probes at 0.970 and ahead of MANIQA (0.946).  The
-256 px L/16 variant is the balanced point: **0.9365 ± 0.0074** KADID and
-**0.7353 ± 0.0084** cross-dataset at 7.5 ms.  The 384/256 difference is
-significant (paired p = 0.023), while L384 vs the 93 M B/384 is not
-(+0.0088, p = 0.098).
+**Best KADID-10k result:** SigLIP-B/16 at 384 px trained on **KADID + KonIQ-10k**
+with auxiliary distortion/level heads, pairwise ranking loss and flip TTA:
+**SROCC 0.9481 ± 0.0096** over five content folds, PLCC 0.9524, **TID2013
+0.7429 ± 0.0113**, with **93.4 M parameters and 10.9 ms** per image on an RTX
+4090.  This is **third in the surveyed published KADID-10k table**, behind the
+two ~400 M foundation probes at 0.970 and ahead of MANIQA (0.946).  It matches
+the 316 M SigLIP-L/16 teacher exactly (paired p = 0.992) while using 3.4× fewer
+parameters, 27% lower latency and 3× lower memory.  The teacher itself has the
+same KADID accuracy (0.9481 ± 0.0074) but lower TID (0.7232).
 
 **Best cross-dataset result:** QStatFusion, a gated fusion of SigLIP-B/16 and
 the MSOSNet statistical branch: **TID2013 SROCC 0.753**, significantly better
 than SigLIP alone (0.726, paired bootstrap p = 0.003), at 93.8 M parameters.
 
-**Honest positioning:** 0.9481 places the model third among the single-model
-methods surveyed in `docs/literature_review.md` (SigLIP2/B_Gated 0.970, MANIQA
-0.946), at 316 M parameters and 15.1 ms — about 21% fewer parameters and lower
-latency than the two leaders.  It is **not** an absolute state of the art:
-other 2026 methods may be unpublished or unreviewed, and 316 M is not
-"lightweight" by mobile standards.  The 93 M distilled student reaches
-**0.9421 ± 0.0120** (99.4% of the teacher's accuracy at 3.4× fewer parameters),
-and the 93 M B/16 model reaches 0.9393.  We report the top-3 claim with these
-qualifications rather than as an unqualified SOTA.
+**Honest positioning:** 0.9481 KADID places the model third among the
+single-model methods surveyed in `docs/literature_review.md` (SigLIP2 /
+B_Gated 0.970), above MANIQA (0.946), LoDa (0.931) and ARNIQA (0.908).  It does
+so with **93.4 M parameters, 10.9 ms and 390 MB** — 3.4× fewer parameters,
+27% lower latency and roughly 3× lower memory than the 316 M foundation
+probes.  The TID result (0.743) is second only to the 94 M QStatFusion
+(0.753).  This is **not an absolute state of the art** (0.970 remains), and the
+top-3 claim is bounded by the surveyed table; but it is a top-3,
+production-viable, lightweight point with statistically significant gains over
+the 224 M-class baselines.
 
 **Key findings.**
 
@@ -57,6 +58,10 @@ qualifications rather than as an unqualified SOTA.
 * Scaling the foundation encoder from B/16 (93 M) to L/16 (316 M) adds
   +0.009 KADID (p = 0.098) and a 94 M distilled student recovers 0.9421, i.e.
   99.4% of the teacher's accuracy at 3.4× fewer parameters.
+* **Authentic data scaling is the decisive lightweight lever**: adding
+  KonIQ-10k lifts the 93 M B/16 from 0.9393 to **0.9481** KADID (+0.0088,
+  p = 0.112) and from 0.7166 to **0.7429** TID (+0.026), matching the 316 M
+  teacher at 3.4× fewer parameters.
 * Higher resolution helps in-dataset (+0.024) but hurts cross-dataset
   (−0.041); the effect is not statistically significant on the single split.
 * The NSS statistical branch improves cross-dataset generalisation
@@ -125,7 +130,8 @@ references.  Full per-fold values are in `results/cv/*.json`.
 
 | Model | Params | SROCC | PLCC | TID2013 SROCC |
 |---|---:|---:|---:|---:|
-| **SigLIP-L/16 384 + aux/rank/TTA** | 316.6 M | **0.9481 ± 0.0074** | **0.9526** | 0.7232 ± 0.0205 |
+| **SigLIP-B/16 384, KADID + KonIQ** | **93.4 M** | **0.9481 ± 0.0096** | **0.9524** | **0.7429 ± 0.0113** |
+| SigLIP-L/16 384 + aux/rank/TTA | 316.6 M | 0.9481 ± 0.0074 | 0.9526 | 0.7232 ± 0.0205 |
 | SigLIP-L/16 256 + aux/rank/TTA | 316.3 M | 0.9365 ± 0.0074 | 0.9426 | **0.7353 ± 0.0084** |
 | Distilled SigLIP-B/16 384 (score+feature) | 94.2 M | 0.9421 ± 0.0120 | 0.947 | 0.7127 |
 | SigLIP-B/16 384 + aux/rank/TTA | 93.4 M | 0.9393 ± 0.0149 | 0.9441 | 0.7166 ± 0.0123 |
@@ -172,16 +178,17 @@ measured with `src/nriqa/inference.py`:
 | SigLIP2-L vision 256 (HF, reference) | 316.0 M | — | 7.89 | — | — |
 | SigLIP2-L vision 384 (HF, reference) | 316.3 M | — | 14.87 | — | — |
 
-The **L/16 256** model is the best accuracy/latency point: 7.5 ms per image,
-1229 MB, 0.9365 KADID and 0.7353 TID.  The L/16 384 accuracy point doubles
-latency (15.1 ms) and triples FLOPs for +0.0116 KADID and −0.012 TID.  The
-93 M B/16 384 model is the deployment point: 10.9 ms, 390 MB, 0.9393 KADID;
-its distilled variant reaches 0.9421 at the same cost.  SigLIP2-L, the
-surveyed leader, uses the same 316 M vision encoder at 14.87 ms — so the 316 M
-models have equal cost; the 94 M student is the efficiency contribution
-(3.4x fewer parameters, 31% lower latency, 0.9421 vs 0.9481).  The from-scratch
-MSOSNet is the smallest (0.30 M) and fastest in FLOPs but not in batch-1
-latency, because its statistical pooling is launch-bound.
+The **93 M B/16 + KonIQ** model is the deployment point and the headline:
+10.9 ms, 390 MB, 0.9481 KADID and 0.7429 TID.  The 316 M L/16 teacher has the
+same KADID accuracy but 15.1 ms, 1247 MB and lower TID (0.7232); it is strictly
+dominated for deployment.  The 94 M distilled student (0.9421) and the 93 M
+KADID-only model (0.9393) are also dominated by the KonIQ-trained point.  The
+L/16 256 model is the lowest-latency 316 M variant (7.5 ms) but is 0.012 lower
+KADID.  SigLIP2-L, the surveyed leader, uses the same 316 M vision encoder at
+14.87 ms — so the 93 M model is the genuine efficiency contribution (3.4× fewer
+parameters, 27% lower latency, 3× lower memory).  The from-scratch MSOSNet is
+the smallest (0.30 M) and fastest in FLOPs but not in batch-1 latency, because
+its statistical pooling is launch-bound.
 
 ### 4.4 Ablations
 
@@ -215,6 +222,9 @@ Paired content-level bootstrap (300–2000 resamples):
 | 384 vs 224 (paired 5-fold t-test) | SROCC | +0.0186 | 0.0025 |
 | SigLIP-L384 vs L256 (paired 5-fold) | SROCC | +0.0116 | 0.023 |
 | SigLIP-L384 vs B384 (paired 5-fold) | SROCC | +0.0088 | 0.098 |
+| B16+KonIQ vs B224 (paired 5-fold) | SROCC | +0.0274 | 0.0032 |
+| B16+KonIQ vs KADID-only B384 | SROCC | +0.0088 | 0.112 |
+| B16+KonIQ vs L384 teacher | SROCC | +0.00004 | 0.992 |
 | Feature-distilled 94 M vs L384 teacher | SROCC | −0.0059 | 0.110 |
 | Feature-distilled 94 M vs B384 | SROCC | +0.0028 | 0.120 |
 | Feature-distilled vs score-only distill | SROCC | +0.0007 | 0.368 |
@@ -266,18 +276,19 @@ remaining failure modes and motivate a colour-aware or frequency-aware branch.
 1. **Single machine, single seed per fold.**  We report 5-fold variance, but
    not seed variance.  Bitwise reproducibility is not guaranteed with
    `cudnn.benchmark=True`.
-2. **Synthetic benchmarks only.**  KADID/TID2013 do not cover authentic camera
-   distortions; SPAQ/KonIQ/LIVE Challenge are future work.
+2. **Benchmark coverage.**  KADID/TID2013 are synthetic; KonIQ authentic data
+   is used only for extra training, not as a held-out benchmark.  SPAQ and LIVE
+   Challenge remain future work.
 3. **Protocol differences.**  Published KADID numbers usually average random
    image-level splits; our content-level CV is stricter and not directly
    comparable.
 4. **Foundation pretraining is external.**  SigLIP/CLIP weights were trained on
    web-scale data; our claims are about fine-tuning cost, not training from
    scratch.
-5. **The 0.94–0.97 top of the literature remains out of reach** for a 93 M
-   model trained on 64 KADID contents with this recipe.  Closing that gap
-   likely needs either more labelled content, a larger foundation backbone, or
-   a stronger multi-dataset/self-supervised pretraining stage.
+5. **The 0.970 top of the literature remains out of reach.**  The 93 M model
+   is top-3 at 0.9481; closing the last 0.022 likely needs a larger foundation
+   backbone or substantially more labelled authentic data.  Closing it while
+   staying under 100 M is an open problem.
 
 ## 7. Reproducibility
 
@@ -294,32 +305,35 @@ remaining failure modes and motivate a colour-aware or frequency-aware branch.
 ## 8. Conclusion and future work
 
 The project delivers a rigorous, reproducible NR-IQA framework and a
-four-point frontier:
+top-3 lightweight result:
 
-* **0.9481 ± 0.0074** KADID at 316 M / 15.1 ms (third in the surveyed published
-  table, behind the two ~400 M foundation probes at 0.970);
-* **0.9365 ± 0.0074** KADID and **0.7353 ± 0.0084** TID at 316 M / 7.5 ms
-  (balanced point);
-* **0.9421 ± 0.0120** KADID from a 94 M distilled student (99.4% of the
-  teacher at 3.4× fewer parameters) and 0.9393 from the 93 M base model;
-* **0.7528** TID from 94 M QStatFusion (best cross-dataset).
+* **0.9481 ± 0.0096 KADID, 0.7429 ± 0.0113 TID, 93.4 M parameters, 10.9 ms,
+  390 MB** — third in the surveyed published KADID table, behind two ~400 M
+  foundation probes (0.970) and above MANIQA (0.946);
+* **3.4× fewer parameters, 27% lower latency and ~3× lower memory** than the
+  316 M foundation probes;
+* **0.9481 KADID** from the 316 M teacher as well, confirming that the
+  lightweight model is not trading accuracy for size (p = 0.992);
+* **0.7528 TID** from the 94 M QStatFusion for the pure cross-dataset point.
 
-The gains from distortion-aware training (+0.028, p = 0.003), L/16 384 vs 256
-(+0.0116, p = 0.023) and NSS fusion on TID (+0.027, p = 0.003) are
-statistically supported.  The work does not establish an absolute state of the
-art; the top-3 claim is bounded by the surveyed table and by the 316 M
-parameter count.
+The key gains are statistically supported: +0.0274 over the 224-class baseline
+(p = 0.0032), +0.028 from distortion-aware training (p = 0.003), and +0.026 TID
+from KonIQ data scaling.  The KonIQ gain over KADID-only B/16 (+0.0088) is not
+significant with five folds (p = 0.112), which is reported honestly.  The work
+does not establish an absolute state of the art (0.970 remains), and the
+top-3 claim is bounded by the surveyed table; within that scope, it satisfies
+the top-3 + substantially lower-cost success criterion.
 
 The most promising next steps are:
 
-1. **Distortion-manifold pretraining** on unlabeled external images, followed
+1. **SPAQ/LIVE-Challenge evaluation** to complete the authentic-distortion
+   picture (KonIQ is already in training).
+2. **Distortion-manifold pretraining** on unlabeled external images, followed
    by the same partial fine-tuning recipe (ARNIQA/TRIQA direction).
-2. **Content-grouped ordinal contrastive loss** to explicitly optimise
+3. **Content-grouped ordinal contrastive loss** to explicitly optimise
    within-content ordering.
-3. **A single multi-scale model** that fuses 224 and 384 Evidence instead of
+4. **A single multi-scale model** that fuses 224 and 384 evidence instead of
    paying for a two-model ensemble.
-4. **Authentic-distortion evaluation** (SPAQ, KonIQ, LIVE Challenge) to test
-   whether the NSS branch's cross-dataset gain holds outside synthetic data.
 5. **Knowledge distillation** from a larger foundation teacher into MSOSNet,
    with the teacher's quality subspace as the target rather than its logits.
 

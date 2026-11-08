@@ -106,6 +106,51 @@ def _tid_rows(root: str) -> List[Dict[str, Any]]:
     return rows
 
 
+
+
+def _koniq_rows(root: str) -> List[Dict[str, Any]]:
+    """KonIQ-10k authentic-distortion labels (DaRUS 72288) + 512x384 images."""
+    label_path = os.path.join(root, "koniq10k_scores_and_distributions.tab")
+    if not os.path.exists(label_path):
+        raise FileNotFoundError(f"KonIQ label file not found: {label_path}")
+    image_root = os.path.join(root, "koniq10k_512x384")
+    if not os.path.isdir(image_root):
+        image_root = root
+    index: Dict[str, str] = {}
+    for dirpath, _, filenames in os.walk(image_root):
+        for f in filenames:
+            if f.lower().endswith((".jpg", ".jpeg", ".png")):
+                index.setdefault(f.lower(), os.path.join(dirpath, f))
+    if not index:
+        raise FileNotFoundError(f"No KonIQ images found under {image_root}")
+    rows: List[Dict[str, Any]] = []
+    with open(label_path, "r", encoding="utf-8", errors="ignore") as fh:
+        header = fh.readline()
+        for line in fh:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 8:
+                continue
+            name = parts[0].strip().strip('"')
+            key = name.lower()
+            if key not in index:
+                continue
+            rows.append(
+                {
+                    "dataset": "koniq10k",
+                    "name": name,
+                    "path": index[key],
+                    "ref": name,
+                    "mos": float(parts[7]),
+                    "mos_std": float(parts[8]) if len(parts) > 8 and parts[8] else np.nan,
+                    "dist_type": 0,
+                    "level": 0,
+                }
+            )
+    if not rows:
+        raise ValueError(f"No KonIQ rows matched under {root}")
+    return rows
+
+
 def load_dataframe(dataset: str, root: str) -> pd.DataFrame:
     """Load a supported dataset into the canonical dataframe schema.
 
@@ -117,6 +162,8 @@ def load_dataframe(dataset: str, root: str) -> pd.DataFrame:
         rows = _kadid_rows(root)
     elif dataset in ("tid2013", "tid", "tid-2013"):
         rows = _tid_rows(root)
+    elif dataset in ("koniq10k", "koniq", "koniq-10k"):
+        rows = _koniq_rows(root)
     else:
         raise ValueError(f"Unsupported dataset: {dataset}")
     df = pd.DataFrame(rows)
@@ -216,6 +263,8 @@ def load_extra_train(cfg: Dict[str, Any], exclude: Sequence[str] = ()) -> pd.Dat
             continue
         if name.lower() in ("tid2013", "tid"):
             df = load_dataframe("tid2013", data_cfg.get("tid_root", "data/tid2013"))
+        elif name.lower() in ("koniq10k", "koniq"):
+            df = load_dataframe("koniq10k", data_cfg.get("koniq_root", "data/koniq"))
         else:
             raise ValueError(f"Unsupported extra dataset: {name}")
         lo, hi = float(df["mos"].min()), float(df["mos"].max())
@@ -322,13 +371,18 @@ class IQADataset(Dataset):
             "dist_type": int(row["dist_type"]),
             "level": int(row["level"]),
         }
-        if "soft" in row and pd.notna(row["soft"]):
-            item["soft"] = float(row["soft"])
+        if "soft" in row:
+            item["soft"] = float(row["soft"]) if pd.notna(row["soft"]) else float("nan")
         if self.features is not None:
             idx = self.feature_index.get(str(row["name"]))
             if idx is None:
-                raise KeyError(f"No teacher feature for {row['name']}")
-            item["tfeat"] = torch.from_numpy(self.features[idx])
+                # Extra datasets (KonIQ) have no teacher feature; use zeros and
+                # a validity flag so the loss can mask them out.
+                item["tfeat"] = torch.zeros(self.features.shape[1], dtype=torch.float32)
+                item["has_tfeat"] = 0.0
+            else:
+                item["tfeat"] = torch.from_numpy(self.features[idx])
+                item["has_tfeat"] = 1.0
         return item
 
 
@@ -481,9 +535,8 @@ def make_splits_and_loaders(cfg: Dict[str, Any]) -> Dict[str, Any]:
             raise ValueError(f"{soft_path} must contain name and soft columns")
         train_df = train_df.merge(soft[["name", "soft"]], on="name", how="left")
         missing = int(train_df["soft"].isna().sum())
-        if missing:
-            raise ValueError(f"{missing} training images have no soft target in {soft_path}")
-        print(f"soft targets: {len(train_df)} images from {soft_path}")
+        print(f"soft targets: {len(train_df) - missing}/{len(train_df)} images from {soft_path}"
+              + (f" ({missing} extra images use hard labels only)" if missing else ""))
     extra = load_extra_train(cfg, exclude=(data_cfg["dataset"],))
     if len(extra):
         train_df = pd.concat([train_df, extra], ignore_index=True)

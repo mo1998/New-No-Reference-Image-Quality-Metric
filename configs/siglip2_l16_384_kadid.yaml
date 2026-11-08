@@ -1,0 +1,33 @@
+include: base.yaml
+experiment:
+  name: siglip2_l16_384_kadid
+data:
+  norm: none
+  size: 384
+model:
+  name: siglip2_regressor
+  pretrained: true
+  kwargs:
+    model_name: google/siglip2-large-patch16-384
+    freeze_blocks: 16
+    head_hidden: 256
+    dropout: 0.2
+    aux_heads: true
+train:
+  epochs: 10
+  batch_size: 8
+  lr: 5.0e-5
+  weight_decay: 5.0e-2
+  warmup_epochs: 2
+  early_stop:
+    patience: 4
+  loss:
+    mse: 1.0
+    plcc: 0.2
+    rank: 0.2
+    margin: 0.05
+    aux_distortion: 0.2
+    aux_level: 0.1
+eval:
+  tta: true
+  batch_size: 32
