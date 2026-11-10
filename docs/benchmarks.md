@@ -229,3 +229,13 @@ the 93.4 M KADID+KonIQ model reaches **LIVEC 0.8662 ± 0.0014** and
 **SPAQ 0.8884 ± 0.0024** SROCC, while the 316 M version reaches 0.8846 and
 0.8986.  KADID-only models collapse to 0.6410/0.7493, showing that authentic
 training data, not synthetic benchmark fitting, is the decisive factor.
+
+
+## 9. Split-protocol bias
+
+Random image-level KADID splits inflate published NR-IQA models by
+**+0.116 to +0.188 SROCC** relative to a matched content-held-out split; a
+zero-shot control shows the random test subset is not easier.  Under the
+controlled content split the 93 M KonIQ model reaches 0.9211 single-split /
+0.9481 five-fold, while TOPIQ/ARNIQA/CLIP-IQA reach 0.841/0.838/0.746.
+Details and caveats: [split_bias.md](split_bias.md).

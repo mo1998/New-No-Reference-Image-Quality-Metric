@@ -746,6 +746,82 @@ class Siglip2Regressor(nn.Module):
         return score, aux
 
 
+
+
+# ---------------------------------------------------------------------------
+# Published PyIQA models as trainable regressors
+# ---------------------------------------------------------------------------
+class PyIQANetRegressor(nn.Module):
+    """Fine-tunable wrapper around the underlying PyIQA network.
+
+    ``pyiqa.create_metric`` returns an ``InferenceModel`` whose public forward
+    disables gradients.  Training the actual ``net`` is the clean way to put
+    published architectures under the same split protocol as our models.
+    """
+
+    def __init__(self, metric_name: str = "maniqa", grad_checkpoint: bool = False,
+                 freeze_prefix: str = "", **_):
+        super().__init__()
+        import pyiqa
+
+        metric = pyiqa.create_metric(metric_name, device="cpu")
+        self.net = metric.net
+        self.metric_name = metric_name
+        if freeze_prefix:
+            for name, p in self.net.named_parameters():
+                if name.startswith(freeze_prefix):
+                    p.requires_grad_(False)
+        if grad_checkpoint:
+            target = self.net
+            if hasattr(self.net, "vit"):
+                target = self.net.vit
+            if hasattr(target, "set_grad_checkpointing"):
+                target.set_grad_checkpointing(True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.net(x)
+        return out.reshape(-1)
+
+
+class CLIPIQAProbe(nn.Module):
+    """CLIP-IQA features with a trainable regression head.
+
+    The PyIQA CLIP-IQA implementation freezes its CLIP backbone and exposes no
+    trainable parameters.  To place CLIP-IQA under the same split protocol we
+    keep the official CLIP preprocessing/encoder frozen and train a small head
+    on its image features.  This is the strongest trainable form available for
+    that implementation without replacing its backbone.
+    """
+
+    def __init__(self, dropout: float = 0.2, **_):
+        super().__init__()
+        import pyiqa
+        from pyiqa.archs.constants import OPENAI_CLIP_MEAN, OPENAI_CLIP_STD
+
+        metric = pyiqa.create_metric("clipiqa", device="cpu")
+        self.ciqa = metric.net
+        self.clip = self.ciqa.clip_model[0]
+        for p in self.clip.parameters():
+            p.requires_grad_(False)
+        self.register_buffer("mean", torch.tensor(OPENAI_CLIP_MEAN).view(1, 3, 1, 1))
+        self.register_buffer("std", torch.tensor(OPENAI_CLIP_STD).view(1, 3, 1, 1))
+        feat_dim = 1024  # RN50 image embedding
+        self.head = nn.Sequential(
+            nn.LayerNorm(feat_dim),
+            nn.Linear(feat_dim, 256),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        self.clip.eval()
+        z = (x - self.mean) / self.std
+        with torch.no_grad():
+            f = self.clip.encode_image(z.to(next(self.clip.parameters()).device), pos_embedding=False)
+        return self.head(f.float()).squeeze(-1)
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
@@ -762,6 +838,8 @@ _MODEL_REGISTRY = {
     "timm_regressor": TimmRegressor,
     "qstat_fusion": QStatFusion,
     "siglip2_regressor": Siglip2Regressor,
+    "pyiqa_net_regressor": PyIQANetRegressor,
+    "clipiqa_probe": CLIPIQAProbe,
 }
 
 

@@ -67,6 +67,26 @@ comparison and the limitations.
 * Full fine-tuning overfits: **−0.058** vs partial fine-tuning.
 * SigLIP2-B is significantly worse than SigLIP-B on this split (p = 0.003).
 
+## Split-protocol audit (KADID-10k)
+
+Random image-level splits leak reference content into the test set.  Re-training
+three published models under matched 7,125/1,000/2,000 splits shows the
+inflation directly:
+
+| Model | Content split SROCC | Random split SROCC | Δ |
+|---|---:|---:|---:|
+| CLIP-IQA (frozen CLIP + head) | 0.7464 | 0.9340 | **+0.1875** |
+| ARNIQA | 0.8382 | 0.9569 | **+0.1187** |
+| TOPIQ | 0.8413 | 0.9569 | **+0.1157** |
+| **Ours, SigLIP-B/16 + KonIQ** | **0.9211** | 0.9659 | **+0.0448** |
+
+A zero-shot control on the same test subsets shows random is *not* easier
+(TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383, ARNIQA 0.737→0.699), so this is
+content leakage, not test composition.  Under the controlled content protocol
+our 93 M model (0.9211 single split, **0.9481 ± 0.0096** over five folds) is the
+best controlled result; the random-split numbers near 0.95 are not comparable.
+Full protocol, caveats and reproduction: [split-protocol audit](docs/split_bias.md).
+
 ## Authentic-distortion results (zero-shot)
 
 Evaluated without training on either benchmark; the KonIQ-trained models only
@@ -94,6 +114,7 @@ context: LIVEC 0.841/0.875, SPAQ 0.916/0.927.
 ├── docs/
 │   ├── architecture.md          # model specifications
 │   ├── authentic_benchmarks.md   # LIVEC + SPAQ zero-shot results
+│   ├── split_bias.md            # random vs content split audit
 │   ├── benchmarks.md            # all result tables
 │   ├── final_report.md          # final report and discussion
 │   ├── literature_review.md     # SOTA literature and opportunity analysis

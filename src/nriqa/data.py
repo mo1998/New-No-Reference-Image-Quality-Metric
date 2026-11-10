@@ -315,6 +315,22 @@ def split_dataframe(
         raise ValueError("Need at least 5 reference contents to split")
     rng = np.random.default_rng(seed)
 
+    if mode == "random":
+        # Image-level random split with exactly the same 7125/1000/2000 sizes
+        # as the content split.  This is the leaky protocol used by many IQA
+        # papers: distorted versions of the same reference can appear in both
+        # train and test.
+        perm = rng.permutation(len(df))
+        n_test = int(round(len(df) * test_frac))
+        n_val = int(round(len(df) * val_frac))
+        test_idx = perm[:n_test]
+        val_idx = perm[n_test:n_test + n_val]
+        train_idx = perm[n_test + n_val:]
+        return (
+            df.iloc[sorted(train_idx)].reset_index(drop=True),
+            df.iloc[sorted(val_idx)].reset_index(drop=True),
+            df.iloc[sorted(test_idx)].reset_index(drop=True),
+        )
     if mode == "holdout":
         perm = rng.permutation(len(refs))
         n_test = max(1, int(round(len(refs) * test_frac)))

@@ -1,0 +1,5 @@
+model,params_m,content_srocc,random_srocc,delta,content_plcc,random_plcc,note
+clipiqa,102.3 (frozen) + 0.26 head,0.746449,0.933992,0.187543,0.756158,0.936681,CLIP-IQA features + trainable head
+arniqa,23.5,0.838168,0.956901,0.118733,0.853621,0.960078,full fine-tune
+topiq,45.2,0.841259,0.956942,0.115684,0.849959,0.959617,full fine-tune
+siglip_b16_koniq,93.4,0.9211,0.9659,0.0448,0.9298,0.9677,single content split; 5-fold content = 0.9481

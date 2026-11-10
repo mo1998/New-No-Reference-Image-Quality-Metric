@@ -1,0 +1,39 @@
+include: ../base.yaml
+experiment:
+  name: pyiqa_ft
+  output_dir: runs_split
+data:
+  size: 224
+  split: holdout
+  test_frac: 0.2
+  val_frac: 0.1
+  num_workers: 8
+  augment: standard
+  norm: none
+  eval_mode: center
+  eval_datasets: [kadid10k]
+model:
+  name: pyiqa_net_regressor
+  pretrained: true
+  kwargs:
+    metric_name: maniqa
+train:
+  epochs: 8
+  batch_size: 16
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  warmup_epochs: 1
+  amp: true
+  label_norm: zscore
+  early_stop:
+    patience: 3
+    min_delta: 5.0e-4
+    monitor: val_srocc
+  loss:
+    mse: 1.0
+    plcc: 0.1
+    rank: 0.0
+eval:
+  bootstrap: 0
+  batch_size: 32
+  tta: false
