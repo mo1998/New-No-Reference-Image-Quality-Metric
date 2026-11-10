@@ -67,6 +67,23 @@ comparison and the limitations.
 * Full fine-tuning overfits: **−0.058** vs partial fine-tuning.
 * SigLIP2-B is significantly worse than SigLIP-B on this split (p = 0.003).
 
+## Authentic-distortion results (zero-shot)
+
+Evaluated without training on either benchmark; the KonIQ-trained models only
+see KonIQ during training. Full protocol and tables: [authentic benchmarks](docs/authentic_benchmarks.md).
+
+| Model | Params | LIVEC SROCC | SPAQ SROCC |
+|---|---:|---:|---:|
+| SigLIP-L/16 384 + KonIQ | 316 M | **0.8846** | **0.8986** |
+| SigLIP-B/16 384 + KonIQ (5-fold) | 93.4 M | 0.8662 ± 0.0014 | 0.8884 ± 0.0024 |
+| TOPIQ (PyIQA) | 45.2 M | 0.8283 | 0.8709 |
+| SigLIP-B/16 384, KADID only | 93.4 M | 0.6410 | 0.7493 |
+| ARNIQA (PyIQA) | 23.5 M | 0.5763 | 0.7935 |
+
+KonIQ training is the decisive factor: the 93 M model gains **+0.225 LIVEC**
+and **+0.139 SPAQ** over its KADID-only counterpart. Published CLIP/SigLIP2
+context: LIVEC 0.841/0.875, SPAQ 0.916/0.927.
+
 ## Repository layout
 
 ```
@@ -76,6 +93,7 @@ comparison and the limitations.
 ├── data/                        # KADID-10k + TID2013 (not committed)
 ├── docs/
 │   ├── architecture.md          # model specifications
+│   ├── authentic_benchmarks.md   # LIVEC + SPAQ zero-shot results
 │   ├── benchmarks.md            # all result tables
 │   ├── final_report.md          # final report and discussion
 │   ├── literature_review.md     # SOTA literature and opportunity analysis

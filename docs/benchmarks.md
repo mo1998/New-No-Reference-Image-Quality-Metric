@@ -219,3 +219,13 @@ PYTHONPATH=src .venv/bin/python -m nriqa.ablate \
   --config configs/siglip_b16_aux_kadid.yaml \
   --variants configs/ablations/siglip.json
 ```
+
+
+## 8. Authentic-distortion benchmarks
+
+Zero-shot evaluation on LIVE Challenge (1,162 images) and SPAQ (11,125 images)
+is reported in [authentic_benchmarks.md](authentic_benchmarks.md).  Headline:
+the 93.4 M KADID+KonIQ model reaches **LIVEC 0.8662 ± 0.0014** and
+**SPAQ 0.8884 ± 0.0024** SROCC, while the 316 M version reaches 0.8846 and
+0.8986.  KADID-only models collapse to 0.6410/0.7493, showing that authentic
+training data, not synthetic benchmark fitting, is the decisive factor.

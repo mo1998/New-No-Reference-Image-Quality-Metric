@@ -115,3 +115,18 @@ one-sided (the model always sees at least 70% of the image).
 * A single 5-fold estimate still has finite-sample uncertainty; confidence
   intervals are reported wherever practical.
 * Multi-dataset training changes the comparison class and is labelled as such.
+
+
+## 8. Authentic-distortion evaluation
+
+Two authentic benchmarks are evaluated zero-shot:
+
+* **LIVE Challenge (LIVEC):** 1,169 released images; the seven official training
+  images (`t1`–`t7`) are excluded, leaving the standard 1,162-image test set.
+  MOS 3.4–92.4.
+* **SPAQ:** 11,125 smartphone photographs, MOS 2–96.
+
+No model is trained on either benchmark.  Models that use KonIQ-10k see only
+KonIQ during training.  SROCC is reported without fitting; PLCC uses the
+4-parameter logistic mapping.  Full tables and caveats:
+[authentic_benchmarks.md](authentic_benchmarks.md).

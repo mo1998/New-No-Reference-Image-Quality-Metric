@@ -151,6 +151,118 @@ def _koniq_rows(root: str) -> List[Dict[str, Any]]:
     return rows
 
 
+
+
+def _livec_rows(root: str) -> List[Dict[str, Any]]:
+    """LIVE Challenge (LIVEC) authentic-distortion dataset.
+
+    Expects the IQA-Toolbox layout: ``Data/AllImages_release.mat``,
+    ``Data/AllMOS_release.mat`` and an image folder (``Images`` or ``images``).
+    """
+    import scipy.io as sio
+
+    data_dir = os.path.join(root, "Data")
+    if not os.path.isdir(data_dir):
+        data_dir = root
+    names = sio.loadmat(os.path.join(data_dir, "AllImages_release.mat"))["AllImages_release"]
+    mos = sio.loadmat(os.path.join(data_dir, "AllMOS_release.mat"))["AllMOS_release"][0]
+    std = sio.loadmat(os.path.join(data_dir, "AllStdDev_release.mat"))["AllStdDev_release"][0]
+    img_dirs = [d for d in (os.path.join(root, "Images"), os.path.join(root, "images"),
+                            os.path.join(root, "Data", "Images"), root) if os.path.isdir(d)]
+    index: Dict[str, str] = {}
+    for d in img_dirs:
+        for dirpath, _, filenames in os.walk(d):
+            for f in filenames:
+                if f.lower().endswith((".jpg", ".jpeg", ".png", ".bmp")):
+                    index.setdefault(f.lower(), os.path.join(dirpath, f))
+        if index:
+            break
+    if not index:
+        raise FileNotFoundError(f"No LIVEC images found under {root}")
+    rows: List[Dict[str, Any]] = []
+    for i, item in enumerate(names):
+        name = str(item[0][0])
+        key = name.lower()
+        if key not in index:
+            continue
+        rows.append(
+            {
+                "dataset": "livec",
+                "name": name,
+                "path": index[key],
+                "ref": name,
+                "mos": float(mos[i]),
+                "mos_std": float(std[i]),
+                "dist_type": 0,
+                "level": 0,
+            }
+        )
+    if not rows:
+        raise ValueError(f"No LIVEC rows matched under {root}")
+    return rows
+
+
+def _spaq_rows(root: str) -> List[Dict[str, Any]]:
+    """SPAQ smartphone-photography dataset (MOS 1-100)."""
+    label_candidates = [
+        os.path.join(root, "Annotations", "MOS and Image attribute scores.xlsx"),
+        os.path.join(root, "MOS and Image attribute scores.xlsx"),
+        os.path.join(root, "Annotations", "MOS_and_Image_attribute_scores.xlsx"),
+    ]
+    label_path = next((p for p in label_candidates if os.path.exists(p)), None)
+    if label_path is None:
+        # fall back to a CSV next to the images
+        csvs = [p for p in (
+            os.path.join(root, "annotations.csv"),
+            os.path.join(root, "spaq_labels.csv"),
+        ) if os.path.exists(p)]
+        if not csvs:
+            raise FileNotFoundError(f"SPAQ annotations not found under {root}")
+        labels = pd.read_csv(csvs[0])
+    else:
+        labels = pd.read_excel(label_path)
+    cols = {str(c).strip().lower(): c for c in labels.columns}
+    name_col = next((cols[k] for k in ("image", "image_name", "img", "img_name", "file", "filename") if k in cols), labels.columns[0])
+    mos_col = next((cols[k] for k in ("mos", "quality", "mos_quality") if k in cols), None)
+    if mos_col is None:
+        raise ValueError(f"SPAQ label file has no MOS column: {list(labels.columns)}")
+    img_root = os.path.join(root, "TestImage")
+    if not os.path.isdir(img_root):
+        img_root = root
+    index: Dict[str, str] = {}
+    for dirpath, _, filenames in os.walk(img_root):
+        for f in filenames:
+            if f.lower().endswith((".jpg", ".jpeg", ".png", ".bmp")):
+                index.setdefault(f.lower(), os.path.join(dirpath, f))
+    if not index:
+        raise FileNotFoundError(f"No SPAQ images found under {img_root}")
+    rows: List[Dict[str, Any]] = []
+    for name_val, mos_val in zip(labels[name_col].tolist(), labels[mos_col].tolist()):
+        name = str(name_val).strip()
+        key = os.path.basename(name).lower()
+        if key not in index:
+            # some annotations use a bare numeric id
+            key2 = (key + ".jpg") if not key.endswith((".jpg", ".jpeg", ".png")) else key
+            if key2 not in index:
+                continue
+            key = key2
+        rows.append(
+            {
+                "dataset": "spaq",
+                "name": os.path.basename(index[key]),
+                "path": index[key],
+                "ref": os.path.basename(index[key]),
+                "mos": float(mos_val),
+                "mos_std": float("nan"),
+                "dist_type": 0,
+                "level": 0,
+            }
+        )
+    if not rows:
+        raise ValueError(f"No SPAQ rows matched under {root}")
+    return rows
+
+
 def load_dataframe(dataset: str, root: str) -> pd.DataFrame:
     """Load a supported dataset into the canonical dataframe schema.
 
@@ -164,6 +276,10 @@ def load_dataframe(dataset: str, root: str) -> pd.DataFrame:
         rows = _tid_rows(root)
     elif dataset in ("koniq10k", "koniq", "koniq-10k"):
         rows = _koniq_rows(root)
+    elif dataset in ("livec", "live-challenge", "livechallenge"):
+        rows = _livec_rows(root)
+    elif dataset in ("spaq", "spaq10k"):
+        rows = _spaq_rows(root)
     else:
         raise ValueError(f"Unsupported dataset: {dataset}")
     df = pd.DataFrame(rows)

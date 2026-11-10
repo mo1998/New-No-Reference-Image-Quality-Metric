@@ -46,3 +46,4 @@ teacher_preds/
 teacher_feats/
 results/smoke/
 teacher_preds*/
+results/authentic/*_predictions.csv

@@ -241,6 +241,28 @@ sampling/reconstruction (0.496), multiplicative Gaussian noise (0.499) and
 quantization noise (0.557).  Hue shift and sparse sampling are the clearest
 remaining failure modes and motivate a colour-aware or frequency-aware branch.
 
+### 4.7 Authentic-distortion benchmarks (zero-shot)
+
+Full protocol and tables: [authentic_benchmarks.md](authentic_benchmarks.md).
+
+| Model | Params | LIVEC SROCC | LIVEC PLCC | SPAQ SROCC | SPAQ PLCC |
+|---|---:|---:|---:|---:|---:|
+| **SigLIP-L/16 384 + KonIQ** | 316.6 M | **0.8846** | **0.9055** | **0.8986** | **0.8990** |
+| **SigLIP-B/16 384 + KonIQ (5-fold)** | **93.4 M** | **0.8662 ± 0.0014** | **0.8915 ± 0.0016** | **0.8884 ± 0.0024** | **0.8909 ± 0.0019** |
+| TOPIQ (PyIQA) | 45.2 M | 0.8283 | 0.8488 | 0.8709 | 0.8764 |
+| SigLIP-B/16 384, KADID only | 93.4 M | 0.6410 | 0.6674 | 0.7493 | 0.7621 |
+| ARNIQA (PyIQA) | 23.5 M | 0.5763 | 0.6240 | 0.7935 | 0.8021 |
+
+**Authentic training is decisive.**  Adding KonIQ-10k lifts the 93 M model from
+0.6410 → 0.8662 SROCC on LIVEC (+0.225) and 0.7493 → 0.8884 on SPAQ (+0.139).
+KADID-only models overfit synthetic distortions and collapse on authentic
+captures.  The 93 M model beats TOPIQ (45 M) on both benchmarks and beats all
+other PyIQA baselines; the 316 M model adds +0.018 LIVEC and +0.010 SPAQ at
+3.4× the parameters.  Published context (Revisiting VL): LIVEC CLIP 0.841,
+SigLIP2 0.875, B_Gated 0.887; SPAQ CLIP 0.916, SigLIP2 0.927, B_Gated 0.928.
+Our LIVEC result is at the top published level; SPAQ remains below the top
+foundation probes.
+
 ## 5. What worked, what did not
 
 **Worked.**
@@ -285,7 +307,12 @@ remaining failure modes and motivate a colour-aware or frequency-aware branch.
 4. **Foundation pretraining is external.**  SigLIP/CLIP weights were trained on
    web-scale data; our claims are about fine-tuning cost, not training from
    scratch.
-5. **The 0.970 top of the literature remains out of reach.**  The 93 M model
+5. **Authentic benchmarks are now covered zero-shot.**  LIVEC (0.8846/0.8662)
+   and SPAQ (0.8986/0.8884) show that KonIQ training is decisive; SPAQ remains
+   below the top foundation probes (0.927–0.928), and KonIQ itself is only used
+   for training, not held out.  Benchmark protocols differ across papers, so
+   the authentic comparison is contextual rather than a controlled leaderboard.
+6. **The 0.970 top of the literature remains out of reach.**  The 93 M model
    is top-3 at 0.9481; closing the last 0.022 likely needs a larger foundation
    backbone or substantially more labelled authentic data.  Closing it while
    staying under 100 M is an open problem.
