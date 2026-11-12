@@ -90,6 +90,9 @@ this is content leakage, not test composition.  Under the controlled content
 protocol our 93 M model (0.9402 ± 0.0176 over three splits, **0.9481 ± 0.0096**
 over five folds) is the best controlled result; the random-split numbers near
 0.95 are not comparable.
+TID2013 replication (2,400/240/360, 20/2/3 refs): ours 0.9266→0.9460
+(+0.019), TOPIQ 0.8650→0.9330, CLIP-IQA 0.8162→0.9027, ARNIQA
+0.6490→0.9211, MANIQA probe 0.9021→0.9679, LIQE probe 0.6756→0.9441.
 Full protocol, caveats and reproduction: [split-protocol audit](docs/split_bias.md).
 
 ## Authentic-distortion results (zero-shot)

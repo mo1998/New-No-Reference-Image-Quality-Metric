@@ -239,4 +239,7 @@ content-held-out split; a zero-shot control shows the random test subset is not
 easier.  Under the controlled content split the 93 M KonIQ model reaches
 **0.9402 ± 0.0176** over three single splits / **0.9481 ± 0.0096** five-fold,
 while the published methods reach 0.850/0.844/0.776/0.789/0.815.
-Details and caveats: [split_bias.md](split_bias.md).
+TID2013 replication (2,400/240/360, 20/2/3 refs): random splits inflate
+LIQE/ARNIQA/CLIP-IQA/TOPIQ/MANIQA by +0.066 to +0.272, while our model gains
++0.019 (0.9266 content vs 0.9460 random).  Details and caveats:
+[split_bias.md](split_bias.md).

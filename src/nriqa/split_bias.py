@@ -26,12 +26,12 @@ def get_splits(root: str = "data/kadid10k", seed: int = 42):
 
 
 @torch.no_grad()
-def score_metric(name: str, df: pd.DataFrame, device: torch.device) -> pd.DataFrame:
+def score_metric(name: str, df: pd.DataFrame, device: torch.device, batch_size: int = 8) -> pd.DataFrame:
     import pyiqa
 
     metric = pyiqa.create_metric(name, device=device)
     transform = build_transform(224, train=False, norm="none", eval_mode="center")
-    loader = make_loader(df, transform, batch_size=8, num_workers=8, shuffle=False, seed=42)
+    loader = make_loader(df, transform, batch_size=batch_size, num_workers=8, shuffle=False, seed=42)
     rows = []
     for batch in loader:
         x = batch["image"].to(device, non_blocking=True)

@@ -86,7 +86,51 @@ because the frozen feature set is fixed and the head is small.
    content split it is the strongest result we can reproduce, and the published
    random-split leaders lose 0.10–0.17 SROCC under the same protocol.
 
-## 4. Caveats
+## 4. TID2013 cross-dataset replication
+
+The same audit on TID2013: 3,000 images, 25 references, 24 distortion types.
+The matched splits are **2,400 train / 240 val / 360 test** (20/2/3 references
+for content; all 25 references for random).  TID2013 content test has only three
+references, so the content estimates are noisier than KADID's 16.
+
+### 4.1 Zero-shot control
+
+| Model | Content test SROCC | Random test SROCC | Δ |
+|---|---:|---:|---:|
+| MANIQA | 0.6340 | 0.3300 | −0.3040 |
+| TOPIQ | 0.6034 | 0.5541 | −0.0493 |
+| CLIP-IQA | 0.6774 | 0.5276 | −0.1498 |
+| ARNIQA | 0.7099 | 0.5543 | −0.1556 |
+| LIQE | 0.6860 | 0.6312 | −0.0548 |
+
+The random TID test subset is **much harder**, not easier.  Any post-training
+random-split gain is therefore leakage.
+
+### 4.2 Fine-tuned / probe results
+
+| Model | Trainable form | Content SROCC | Random SROCC | Δ |
+|---|---|---:|---:|---:|
+| **LIQE** | frozen CLIP + head (3 seeds) | 0.6756 ± 0.1103 | 0.9441 ± 0.0002 | **+0.2685** |
+| **ARNIQA** | full fine-tune | 0.6490 | 0.9211 | **+0.2721** |
+| **CLIP-IQA** | frozen CLIP + head | 0.8162 | 0.9027 | **+0.0865** |
+| **TOPIQ** | full fine-tune | 0.8650 | 0.9330 | **+0.0680** |
+| **MANIQA** | frozen ViT + head (3 seeds) | 0.9021 ± 0.0207 | 0.9679 ± 0.0029 | **+0.0658** |
+| **Ours, SigLIP-B/16** | full fine-tune | **0.9266** | 0.9460 | **+0.0194** |
+
+TID2013 content ranking: ours 0.9266 > TOPIQ 0.8650 > CLIP-IQA 0.8162 >
+ARNIQA 0.6490.  The random ranking is nearly flat (0.90–0.97) because leakage
+lets every model fit the test contents.
+
+### 4.3 Interpretation
+
+The cross-dataset replication is qualitatively identical to KADID: random
+splits inflate every published method (+0.066 to +0.272) while our model gains
+only **+0.019**.  Under the controlled content split our model is again the
+strongest.  The TID content numbers have wide error bars because only three
+references are held out; the direction and relative ranking are nevertheless
+consistent with KADID.
+
+## 5. Caveats
 
 * Three seeds per cell, but the content split changes which 16 references are
   held out; this measures split variance, not only training-seed variance.
@@ -103,7 +147,7 @@ because the frozen feature set is fixed and the head is small.
   single-split content runs (0.9402); the random runs are single-split, so the
   +0.026 row is a same-protocol comparison, not a five-fold estimate.
 
-## 5. Reproduce
+## 6. Reproduce
 
 ```bash
 # full fine-tune under the content split

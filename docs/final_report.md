@@ -306,6 +306,29 @@ buffer and produced NaN losses even with AMP off, a frozen ViT and small
 batches.  Its stable frozen-feature probe is included; CLIP-IQA and LIQE are
 also frozen-feature probes, while TOPIQ/ARNIQA are fully fine-tuned.
 
+### 4.9 TID2013 cross-dataset replication
+
+The audit was repeated on TID2013 with matched **2,400/240/360** splits
+(20/2/3 references for content; all 25 for random).  TID content has only three
+test references, so it is noisier than KADID.
+
+| Model | Trainable form | Content SROCC | Random SROCC | Δ |
+|---|---|---:|---:|---:|
+| LIQE | frozen CLIP + head (3 seeds) | 0.6756 ± 0.1103 | 0.9441 ± 0.0002 | **+0.2685** |
+| ARNIQA | full fine-tune | 0.6490 | 0.9211 | **+0.2721** |
+| CLIP-IQA | frozen CLIP + head | 0.8162 | 0.9027 | **+0.0865** |
+| TOPIQ | full fine-tune | 0.8650 | 0.9330 | **+0.0680** |
+| MANIQA | frozen ViT + head (3 seeds) | 0.9021 ± 0.0207 | 0.9679 ± 0.0029 | **+0.0658** |
+| **Ours, SigLIP-B/16** | full fine-tune | **0.9266** | 0.9460 | **+0.0194** |
+
+The zero-shot control again shows the random TID test subset is *harder*, not
+easier: MANIQA 0.634→0.330, TOPIQ 0.603→0.554, CLIP-IQA 0.677→0.528,
+ARNIQA 0.710→0.554, LIQE 0.686→0.631.  Post-training random-split gains are
+therefore leakage.  The cross-dataset result is qualitatively identical to
+KADID: every published method inflates (+0.066 to +0.272), our model only
++0.019, and under the controlled content split our 0.9266 is the strongest.
+TID content error bars are wide because only three references are held out.
+
 ## 5. What worked, what did not
 
 **Worked.**
@@ -394,7 +417,10 @@ top-3 lightweight result:
   methods by **+0.103 to +0.174 SROCC** (3-seed means); under the matched
   content split they fall to **0.850 / 0.844 / 0.776 / 0.789 / 0.815**, while
   our 93 M model reaches **0.9402 ± 0.0176** over three single splits and
-  **0.9481 ± 0.0096** over five folds.
+  **0.9481 ± 0.0096** over five folds;
+* **TID2013 replication:** random splits inflate the same methods by
+  **+0.066 to +0.272**, while our model gains only **+0.019**; under the content
+  split our 0.9266 is again the strongest.
 
 The key gains are statistically supported: +0.0274 over the 224-class baseline
 (p = 0.0032), +0.028 from distortion-aware training (p = 0.003), and +0.026 TID

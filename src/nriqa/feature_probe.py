@@ -88,6 +88,10 @@ def main():
     ap.add_argument("--features", required=True)
     ap.add_argument("--model", required=True)
     ap.add_argument("--out", default="results/split_bias")
+    ap.add_argument("--dataset", default="kadid10k")
+    ap.add_argument("--root", default="data/kadid10k")
+    ap.add_argument("--test-frac", type=float, default=0.2)
+    ap.add_argument("--val-frac", type=float, default=0.1)
     ap.add_argument("--seeds", type=int, nargs="+", default=[42, 43, 44])
     args = ap.parse_args()
 
@@ -96,7 +100,7 @@ def main():
     X = d["features"].astype(np.float32)
     names = [str(n) for n in d["names"]]
     idx = {n: i for i, n in enumerate(names)}
-    df = load_dataframe("kadid10k", "data/kadid10k")
+    df = load_dataframe(args.dataset, args.root)
     df = df[df["name"].isin(idx)].reset_index(drop=True)
     print(f"{args.model}: {len(df)} rows, features {X.shape}")
 
@@ -104,9 +108,9 @@ def main():
     for seed in args.seeds:
         for split_name in ("content", "random"):
             if split_name == "content":
-                tr, va, te = split_dataframe(df, mode="holdout", test_frac=0.2, val_frac=0.1, seed=seed)
+                tr, va, te = split_dataframe(df, mode="holdout", test_frac=args.test_frac, val_frac=args.val_frac, seed=seed)
             else:
-                tr, va, te = split_dataframe(df, mode="random", test_frac=2000 / 10125, val_frac=1000 / 10125, seed=seed)
+                tr, va, te = split_dataframe(df, mode="random", test_frac=args.test_frac, val_frac=args.val_frac, seed=seed)
             def mat(part):
                 return np.stack([X[idx[n]] for n in part["name"]])
             m = _fit_head(
@@ -118,7 +122,7 @@ def main():
             row = {"model": args.model, "split": split_name, "seed": seed, **m}
             rows.append(row)
             print(f"{args.model} {split_name} seed={seed} SROCC={m['srocc']:.4f} PLCC={m['plcc']:.4f}")
-            pd.DataFrame(rows).to_csv(os.path.join(args.out, f"probe_{args.model}.csv"), index=False)
+            pd.DataFrame(rows).to_csv(os.path.join(args.out, f"probe_{args.model}_{args.dataset}.csv"), index=False)
     print(pd.DataFrame(rows).to_string(index=False))
 
 

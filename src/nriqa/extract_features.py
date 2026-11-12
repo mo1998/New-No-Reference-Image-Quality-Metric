@@ -14,10 +14,11 @@ from .data import build_transform, load_dataframe, make_loader
 
 
 @torch.no_grad()
-def extract(model_name: str, root: str, out: str, device: torch.device, batch_size: int = 8):
+def extract(model_name: str, root: str, out: str, device: torch.device,
+            batch_size: int = 8, dataset: str = "kadid10k"):
     import pyiqa
 
-    df = load_dataframe("kadid10k", root)
+    df = load_dataframe(dataset, root)
     transform = build_transform(224, train=False, norm="none", eval_mode="center")
     loader = make_loader(df, transform, batch_size=batch_size, num_workers=8, shuffle=False, seed=42)
     metric = pyiqa.create_metric(model_name, device=device)
@@ -51,10 +52,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True, choices=["maniqa", "liqe"])
     ap.add_argument("--root", default="data/kadid10k")
+    ap.add_argument("--dataset", default="kadid10k")
     ap.add_argument("--out", required=True)
     ap.add_argument("--batch-size", type=int, default=8)
     args = ap.parse_args()
-    extract(args.model, args.root, args.out, resolve_device("cuda:0"), args.batch_size)
+    extract(args.model, args.root, args.out, resolve_device("cuda:0"), args.batch_size, args.dataset)
 
 
 if __name__ == "__main__":
