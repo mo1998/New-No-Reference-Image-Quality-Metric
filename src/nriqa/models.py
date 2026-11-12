@@ -760,13 +760,14 @@ class PyIQANetRegressor(nn.Module):
     """
 
     def __init__(self, metric_name: str = "maniqa", grad_checkpoint: bool = False,
-                 freeze_prefix: str = "", **_):
+                 freeze_prefix: str = "", eval_forward: bool = False, **_):
         super().__init__()
         import pyiqa
 
         metric = pyiqa.create_metric(metric_name, device="cpu")
         self.net = metric.net
         self.metric_name = metric_name
+        self.eval_forward = eval_forward
         if freeze_prefix:
             for name, p in self.net.named_parameters():
                 if name.startswith(freeze_prefix):
@@ -779,7 +780,16 @@ class PyIQANetRegressor(nn.Module):
                 target.set_grad_checkpointing(True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.net(x)
+        if self.eval_forward:
+            was_training = self.net.training
+            self.net.eval()
+            try:
+                out = self.net(x)
+            finally:
+                if was_training:
+                    self.net.train()
+        else:
+            out = self.net(x)
         return out.reshape(-1)
 
 

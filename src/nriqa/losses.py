@@ -90,13 +90,21 @@ def compute_loss(
 ) -> Tuple[torch.Tensor, Dict[str, float]]:
     """Weighted NR-IQA objective; returns (total, detached component dict)."""
     mse = F.mse_loss(pred, target)
-    plcc = pearson_loss(pred, target)
-    rank = pairwise_rank_loss(
-        pred, target, margin=float(loss_cfg.get("margin", 0.05))
+    w_mse = float(loss_cfg.get("mse", 1.0))
+    w_plcc = float(loss_cfg.get("plcc", 0.0))
+    w_rank = float(loss_cfg.get("rank", 0.0))
+    w_content_rank = float(loss_cfg.get("content_rank", 0.0))
+    # Zero-weight terms are skipped entirely: evaluating them can produce NaN
+    # (e.g. constant predictions) and 0 * NaN would poison the total.
+    plcc = pearson_loss(pred, target) if w_plcc > 0 else pred.new_tensor(0.0)
+    rank = (
+        pairwise_rank_loss(pred, target, margin=float(loss_cfg.get("margin", 0.05)))
+        if w_rank > 0
+        else pred.new_tensor(0.0)
     )
     content_rank = (
         content_rank_loss(pred, target, refs, margin=float(loss_cfg.get("margin", 0.05)))
-        if (refs is not None and float(loss_cfg.get("content_rank", 0.0)) > 0)
+        if (refs is not None and w_content_rank > 0)
         else pred.new_tensor(0.0)
     )
     distill = pred.new_tensor(0.0)
@@ -109,14 +117,19 @@ def compute_loss(
             and float(loss_cfg.get("feature_distill", 0.0)) > 0):
         cos = F.cosine_similarity(student_proj, teacher_feat, dim=1, eps=1e-6).mean()
         feature_distill = 1.0 - cos
-    total = (
-        float(loss_cfg.get("mse", 1.0)) * mse
-        + float(loss_cfg.get("plcc", 0.0)) * plcc
-        + float(loss_cfg.get("rank", 0.0)) * rank
-        + float(loss_cfg.get("content_rank", 0.0)) * content_rank
-        + float(loss_cfg.get("distill", 0.0)) * distill
-        + float(loss_cfg.get("feature_distill", 0.0)) * feature_distill
-    )
+    total = w_mse * mse
+    if w_plcc > 0:
+        total = total + w_plcc * plcc
+    if w_rank > 0:
+        total = total + w_rank * rank
+    if w_content_rank > 0:
+        total = total + w_content_rank * content_rank
+    w_distill = float(loss_cfg.get("distill", 0.0))
+    w_feat = float(loss_cfg.get("feature_distill", 0.0))
+    if w_distill > 0:
+        total = total + w_distill * distill
+    if w_feat > 0:
+        total = total + w_feat * feature_distill
     parts = {"mse": float(mse.detach()), "plcc_loss": float(plcc.detach()),
              "rank_loss": float(rank.detach()),
              "content_rank_loss": float(content_rank.detach()),
