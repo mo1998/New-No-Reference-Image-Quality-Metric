@@ -186,7 +186,8 @@ class Trainer:
         totals = {"loss": 0.0, "mse": 0.0, "plcc_loss": 0.0, "rank_loss": 0.0}
         n_batches = 0
         use_aux = (
-            float(loss_cfg.get("aux_distortion", 0.0)) > 0
+            (float(loss_cfg.get("aux_distortion", 0.0)) > 0
+             or float(loss_cfg.get("quality_ce", 0.0)) > 0)
             and hasattr(self.model, "forward_aux")
         )
         use_feature = (
@@ -222,12 +223,20 @@ class Trainer:
                     if bool(tmask.any()):
                         teacher_feat = batch["tfeat"].to(self.device, dtype=torch.float32)[tmask]
                         student_proj = aux.get("proj")[tmask] if aux is not None else None
+                quality = None
+                if float(loss_cfg.get("quality_ce", 0.0)) > 0:
+                    ds = str(self.cfg["data"].get("dataset", "kadid10k")).lower()
+                    if ds.startswith("tid"):
+                        quality = ((mos / 9.0) * 4.0).round().long().clamp(0, 4)
+                    else:
+                        quality = (mos.round().long() - 1).clamp(0, 4)
                 loss, parts = compute_loss(
                     pred, target, loss_cfg, aux=aux,
                     dist_type=batch["dist_type"].to(self.device) if use_aux else None,
                     level=batch["level"].to(self.device) if use_aux else None,
                     refs=batch["ref"], soft=soft,
                     teacher_feat=teacher_feat, student_proj=student_proj,
+                    quality=quality,
                     aux_mask=aux_mask,
                 )
             self.scaler.scale(loss).backward()

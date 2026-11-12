@@ -282,7 +282,7 @@ cell is a mean ± std over seeds 42, 43 and 44.  Full protocol:
 | ARNIQA | full fine-tune | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
 | TOPIQ | full fine-tune | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
 | MANIQA | frozen ViT + head | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
-| LIQE | frozen CLIP + head | 0.8149 ± 0.0041 | 0.9469 ± 0.0014 | **+0.1321** |
+| LIQE | full fine-tune, CE | 0.8318 | 0.9184 | **+0.0866** |
 | **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
 
 A zero-shot control on the same test subsets (no KADID training) shows the
@@ -294,17 +294,16 @@ hypothesised 0.02–0.04**.
 This is a genuine methodological contribution and it reframes the ranking:
 under the controlled content split our 93 M model reaches **0.9402 ± 0.0176**
 over three single splits (and **0.9481 ± 0.0096** over five folds), while the
-published methods fall to **0.8496 / 0.8438 / 0.7764 / 0.7892 / 0.8149**.  The
+published methods fall to **0.8496 / 0.8438 / 0.8318 / 0.7764 / 0.7892**.  The
 random-split numbers near 0.95 are not comparable to 0.9481; the "third-best
 uncontrolled" framing was too pessimistic.  Our model is also much less
-split-sensitive (+0.026 vs +0.103 to +0.174), although the residual gap shows
+split-sensitive (+0.026 vs +0.087 to +0.174), although the residual gap shows
 leakage still helps.
 
-MANIQA full fine-tuning was not usable in this harness: its PyIQA
-implementation stores intermediate ViT outputs in a module-level `save_output`
-buffer and produced NaN losses even with AMP off, a frozen ViT and small
-batches.  Its stable frozen-feature probe is included; CLIP-IQA and LIQE are
-also frozen-feature probes, while TOPIQ/ARNIQA are fully fine-tuned.
+LIQE now has a genuine full fine-tune using its native quality-class
+cross-entropy.  MANIQA full and partial-ViT fine-tuning still collapse to
+constant predictions; its stable frozen-feature probe is retained.  CLIP-IQA is
+also a probe; TOPIQ/ARNIQA/LIQE are fully fine-tuned.
 
 ### 4.9 TID2013 cross-dataset replication
 
@@ -314,7 +313,7 @@ test references, so it is noisier than KADID.
 
 | Model | Trainable form | Content SROCC | Random SROCC | Δ |
 |---|---|---:|---:|---:|
-| LIQE | frozen CLIP + head (3 seeds) | 0.6756 ± 0.1103 | 0.9441 ± 0.0002 | **+0.2685** |
+| LIQE | full fine-tune, CE | 0.8215 | 0.8633 | **+0.0418** |
 | ARNIQA | full fine-tune | 0.6490 | 0.9211 | **+0.2721** |
 | CLIP-IQA | frozen CLIP + head | 0.8162 | 0.9027 | **+0.0865** |
 | TOPIQ | full fine-tune | 0.8650 | 0.9330 | **+0.0680** |

@@ -1,0 +1,18 @@
+include: base_pyiqa.yaml
+experiment:
+  name: liqe_ce
+model:
+  name: liqe_stable
+train:
+  batch_size: 4
+  lr: 1.0e-5
+  epochs: 4
+  amp: false
+  loss:
+    mse: 0.0
+    plcc: 0.0
+    rank: 0.0
+    content_rank: 0.0
+    quality_ce: 1.0
+eval:
+  batch_size: 4

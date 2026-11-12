@@ -1,0 +1,21 @@
+include: base_pyiqa.yaml
+experiment:
+  name: maniqa_partial
+model:
+  name: maniqa_stable
+  kwargs:
+    freeze_vit_blocks: 8
+train:
+  batch_size: 4
+  lr: 1.0e-4
+  epochs: 4
+  amp: false
+  optimizer: adamw
+  grad_clip: 0.1
+  loss:
+    mse: 1.0
+    plcc: 0.0
+    rank: 0.0
+    content_rank: 0.0
+eval:
+  batch_size: 4

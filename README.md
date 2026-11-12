@@ -71,9 +71,8 @@ comparison and the limitations.
 
 Random image-level splits leak reference content into the test set.  Retraining
 published methods under matched 7,125/1,000/2,000 splits (three seeds) shows the
-inflation directly.  TOPIQ/ARNIQA are fully fine-tuned; CLIP-IQA/MANIQA/LIQE use
-stable frozen-feature heads because their PyIQA implementations are not safely
-end-to-end trainable:
+inflation directly.  TOPIQ/ARNIQA/LIQE are fully fine-tuned (LIQE with its native
+quality-class CE); CLIP-IQA/MANIQA use stable frozen-feature heads:
 
 | Model | Content split SROCC | Random split SROCC | Δ |
 |---|---:|---:|---:|
@@ -81,7 +80,7 @@ end-to-end trainable:
 | ARNIQA (full fine-tune) | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
 | TOPIQ (full fine-tune) | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
 | MANIQA (frozen ViT + head) | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
-| LIQE (frozen CLIP + head) | 0.8149 ± 0.0041 | 0.9469 ± 0.0014 | **+0.1321** |
+| LIQE (full fine-tune, CE) | 0.8318 | 0.9184 | **+0.0866** |
 | **Ours, SigLIP-B/16 + KonIQ** | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
 
 A zero-shot control on the same test subsets shows random is *not* easier
@@ -92,7 +91,7 @@ over five folds) is the best controlled result; the random-split numbers near
 0.95 are not comparable.
 TID2013 replication (2,400/240/360, 20/2/3 refs): ours 0.9266→0.9460
 (+0.019), TOPIQ 0.8650→0.9330, CLIP-IQA 0.8162→0.9027, ARNIQA
-0.6490→0.9211, MANIQA probe 0.9021→0.9679, LIQE probe 0.6756→0.9441.
+0.6490→0.9211, MANIQA probe 0.9021→0.9679, LIQE full CE 0.8215→0.8633.
 Full protocol, caveats and reproduction: [split-protocol audit](docs/split_bias.md).
 
 ## Authentic-distortion results (zero-shot)

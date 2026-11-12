@@ -87,6 +87,7 @@ def compute_loss(
     teacher_feat: Optional[torch.Tensor] = None,
     student_proj: Optional[torch.Tensor] = None,
     aux_mask: Optional[torch.Tensor] = None,
+    quality: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, Dict[str, float]]:
     """Weighted NR-IQA objective; returns (total, detached component dict)."""
     mse = F.mse_loss(pred, target)
@@ -160,4 +161,9 @@ def compute_loss(
                 loss_l = F.cross_entropy(logits, target)
                 total = total + w_level * loss_l
                 parts["aux_level"] = float(loss_l.detach())
+        w_quality = float(loss_cfg.get("quality_ce", 0.0))
+        if w_quality > 0 and "quality_logits" in aux and quality is not None:
+            loss_q = F.cross_entropy(aux["quality_logits"], quality.long())
+            total = total + w_quality * loss_q
+            parts["quality_ce"] = float(loss_q.detach())
     return total, parts

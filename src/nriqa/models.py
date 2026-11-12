@@ -841,7 +841,7 @@ class CLIPIQAProbe(nn.Module):
 class MANIQAStable(nn.Module):
     """MANIQA with local intermediate-feature hooks and deterministic resize."""
 
-    def __init__(self, freeze_prefix: str = "", **_):
+    def __init__(self, freeze_prefix: str = "", freeze_vit_blocks: int = 0, **_):
         super().__init__()
         import pyiqa
 
@@ -854,6 +854,17 @@ class MANIQAStable(nn.Module):
             for name, p in self.net.named_parameters():
                 if name.startswith(freeze_prefix):
                     p.requires_grad_(False)
+        if freeze_vit_blocks > 0:
+            for i in range(min(freeze_vit_blocks, len(self.net.vit.blocks))):
+                for p in self.net.vit.blocks[i].parameters():
+                    p.requires_grad_(False)
+            for name in ("patch_embed", "pos_embed", "cls_token"):
+                mod = getattr(self.net.vit, name, None)
+                if isinstance(mod, torch.nn.Parameter):
+                    mod.requires_grad_(False)
+                elif mod is not None:
+                    for p in mod.parameters():
+                        p.requires_grad_(False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         import torch.nn.functional as F
@@ -908,7 +919,7 @@ class LIQEStable(nn.Module):
         metric = pyiqa.create_metric("liqe", device="cpu")
         self.net = metric.net
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward(self, x: torch.Tensor, return_logits: bool = False):
         import torch.nn.functional as F
 
         net = self.net
@@ -930,12 +941,20 @@ class LIQEStable(nn.Module):
         x = x.reshape(bs * num_patch, 3, 224, 224)
         image = net.clip_model.encode_image(x, pos_embedding=True)
         image = image / image.norm(dim=1, keepdim=True)
-        logits = net.clip_model.logit_scale.exp() * image @ text.t()
-        logits = F.softmax(logits.view(bs, num_patch, -1).mean(1), dim=1)
+        raw = net.clip_model.logit_scale.exp() * image @ text.t()
+        raw = raw.view(bs, num_patch, -1).mean(1)
         if net.mtl:
-            logits = logits.view(-1, 5, 9, 11)
-            logits = logits.sum(3).sum(2)
-        return (logits * torch.arange(1, 6, device=x.device, dtype=logits.dtype)).sum(1)
+            raw = raw.view(-1, 5, 9, 11).sum(3).sum(2)
+        probs = F.softmax(raw, dim=1)
+        quality = (probs * torch.arange(1, 6, device=x.device, dtype=probs.dtype)).sum(1)
+        return (quality, raw) if return_logits else quality
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self._forward(x, return_logits=False)
+
+    def forward_aux(self, x: torch.Tensor):
+        quality, logits = self._forward(x, return_logits=True)
+        return quality, {"quality_logits": logits}
 
 
 # ---------------------------------------------------------------------------

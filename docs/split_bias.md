@@ -24,8 +24,9 @@ Both protocols use exactly **7,125 train / 1,000 val / 2,000 test** images.
   and trained on KADID under the two protocols.  This is a controlled
   re-implementation, not the original papers' exact training recipe.
 * **Stable probes** are used where the PyIQA implementation is not safely
-  end-to-end trainable: CLIP-IQA, MANIQA and LIQE use frozen official features
-  with a small trainable head.  TOPIQ and ARNIQA are fully fine-tuned.
+  end-to-end trainable: CLIP-IQA and MANIQA use frozen official features with a
+  small trainable head.  TOPIQ, ARNIQA and LIQE are fully fine-tuned (LIQE with
+  its native quality-class CE).
 
 ## 1. Zero-shot control: is the random test subset simply easier?
 
@@ -54,17 +55,16 @@ Mean ± std over seeds 42, 43 and 44; matched 7,125/1,000/2,000 splits.
 | **TOPIQ** | full fine-tune | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
 | **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
 | **MANIQA** | frozen ViT + head | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
-| **LIQE** | frozen CLIP + head | 0.8149 ± 0.0041 | 0.9469 ± 0.0014 | **+0.1321** |
+| **LIQE** | full fine-tune, CE | 0.8318 | 0.9184 | **+0.0866** |
 
 Per-seed values: [`multiseed.csv`](../results/split_bias/multiseed.csv);
 probe values: [`probe_maniqa.csv`](../results/split_bias/probe_maniqa.csv),
 [`probe_liqe.csv`](../results/split_bias/probe_liqe.csv).
 
-**MANIQA full fine-tuning** was not usable in this harness: its PyIQA
-implementation stores intermediate ViT outputs in a module-level `save_output`
-buffer and produced NaN losses even with AMP off, frozen ViT, lower LR and small
-batches.  The probe is the stable form; its content-split variance is high
-because the frozen feature set is fixed and the head is small.
+**LIQE** now has a genuine full fine-tune: the clean forward plus its native
+quality-class cross-entropy is stable and replaces the probe.  **MANIQA** full
+and partial-ViT fine-tuning still collapse to constant predictions; its stable
+probe is retained.
 
 ## 3. Interpretation
 
@@ -110,7 +110,7 @@ random-split gain is therefore leakage.
 
 | Model | Trainable form | Content SROCC | Random SROCC | Δ |
 |---|---|---:|---:|---:|
-| **LIQE** | frozen CLIP + head (3 seeds) | 0.6756 ± 0.1103 | 0.9441 ± 0.0002 | **+0.2685** |
+| **LIQE** | full fine-tune, CE | 0.8215 | 0.8633 | **+0.0418** |
 | **ARNIQA** | full fine-tune | 0.6490 | 0.9211 | **+0.2721** |
 | **CLIP-IQA** | frozen CLIP + head | 0.8162 | 0.9027 | **+0.0865** |
 | **TOPIQ** | full fine-tune | 0.8650 | 0.9330 | **+0.0680** |
@@ -137,10 +137,11 @@ consistent with KADID.
 * The published models are re-trained with our recipe, not the original papers'
   exact schedules; the comparison is about the split protocol, not a claim that
   our re-implementation equals their published numbers.
-* CLIP-IQA, MANIQA and LIQE use frozen official features with a trainable head;
-  TOPIQ/ARNIQA are fully fine-tuned.  The probe and full fine-tune results
-  should not be compared as if they were the same training method.
-* MANIQA full fine-tuning is excluded (NaN); its stable probe is included.
+* CLIP-IQA and MANIQA use frozen official features with a trainable head;
+  TOPIQ, ARNIQA and LIQE are fully fine-tuned (LIQE with native CE).  The probe
+  and full fine-tune results are not the same training method.
+* MANIQA full/partial-ViT fine-tuning is excluded (constant predictions); its
+  stable probe is included.
 * The random split's validation set also leaks, so early stopping is part of the
   leaky protocol rather than an independent control.
 * Five-fold content CV (0.9481) is a stronger estimate than the three
@@ -183,22 +184,19 @@ Clean training forwards were implemented in `src/nriqa/models.py`:
 
 * `maniqa_stable` removes the module-level `save_output` buffer and the
   training-mode random-crop path; it uses local intermediate-feature hooks.
-* `liqe_stable` fixes the patch-selection index bug
-  (`randint(high=batch)` → `randperm(high=num_patches)`) and uses the same
+* `liqe_stable` fixes the patch-selection index bug and uses the same
   deterministic patch grid at evaluation.
 
-Both clean forwards reproduce the official eval outputs.  Full fine-tuning is
-still not competitive:
+**LIQE is now fully fine-tuned successfully** with its native quality-class
+cross-entropy (5 classes), not MSE on the scalar:
 
-| Attempt | Outcome |
-|---|---|
-| MANIQA, full parameters, clean forward | NaN after one full epoch; stable for ~1,600 steps |
-| MANIQA, frozen ViT + clean post-ViT head | finite loss but constant predictions (SROCC NaN) |
-| LIQE, clean forward, lr 1e-7 | stable 4 epochs; random SROCC 0.749, far below the 0.947 probe |
-| LIQE, clean forward, lr 5e-7 | diverges (val SROCC 0.48 → 0.30) |
+| Benchmark | Content | Random | Δ |
+|---|---:|---:|---:|
+| KADID | 0.8318 | 0.9184 | +0.0866 |
+| TID2013 | 0.8215 | 0.8633 | +0.0418 |
 
-The probes therefore remain the reported MANIQA/LIQE results.  The clean
-forwards are committed for future work, but replacing the training objective
-(e.g. LIQE's text-classification loss rather than MSE on the scalar score) is
-the next necessary step.
+**MANIQA remains probe-only.** Full-parameter and frozen/partial-ViT clean
+fine-tunes still collapse to constant predictions (val SROCC NaN).  The probe
+remains the reported MANIQA result.  The MANIQA forward itself is correct; its
+training behaviour is the unresolved issue.
 
