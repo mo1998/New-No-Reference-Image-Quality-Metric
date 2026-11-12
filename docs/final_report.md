@@ -27,8 +27,9 @@ families of models against strong baselines:
 with auxiliary distortion/level heads, pairwise ranking loss and flip TTA:
 **SROCC 0.9481 ± 0.0096** over five content folds, PLCC 0.9524, **TID2013
 0.7429 ± 0.0113**, with **93.4 M parameters and 10.9 ms** per image on an RTX
-4090.  This is **third in the surveyed published KADID-10k table**, behind the
-two ~400 M foundation probes at 0.970 and ahead of MANIQA (0.946).  It matches
+4090.  This is **third in the raw mixed-protocol KADID-10k table**; after the
+controlled audit it is the **best controlled result** among the models we could
+run, ahead of SigLIP2-L (0.9243), MANIQA (0.8611) and TOPIQ (0.8470).  It matches
 the 316 M SigLIP-L/16 teacher exactly (paired p = 0.992) while using 3.4× fewer
 parameters, 27% lower latency and 3× lower memory.  The teacher itself has the
 same KADID accuracy (0.9481 ± 0.0074) but lower TID (0.7232).
@@ -41,15 +42,16 @@ than SigLIP alone (0.726, paired bootstrap p = 0.003), at 93.8 M parameters.
 mixed-protocol* surveyed table (SigLIP2 / B_Gated 0.970), above MANIQA (0.946),
 LoDa (0.931) and ARNIQA (0.908).  After the split-protocol audit
 (§4.8), this framing is too pessimistic: random image-level splits inflate
-five published methods by **+0.103 to +0.174**, and under a matched content
-split those methods fall to **0.850 / 0.844 / 0.776 / 0.789 / 0.815** while ours
-stays at **0.9402 three-split / 0.9481 five-fold**.  The 0.9481 is therefore the best
-*controlled* result in this study, not the third-best uncontrolled one.  It does
+the re-run methods by **+0.048 to +0.162**, and under a matched content
+split those methods fall to **0.9243 / 0.8611 / 0.8470 / 0.8318 / 0.8210 /
+0.7716** while ours stays at **0.9402 three-split / 0.9481 five-fold**.  The
+0.9481 is therefore the best *controlled* result in this study, not the
+third-best uncontrolled one.  It does
 so with **93.4 M parameters, 10.9 ms and 390 MB** — 3.4× fewer parameters,
 27% lower latency and roughly 3× lower memory than the 316 M foundation
 probes.  The TID result (0.743) is second only to the 94 M QStatFusion
 (0.753).  This is **not an absolute state of the art** (0.970 remains), and the
-top-3 claim is bounded by the surveyed table; but it is a top-3,
+claim is a **controlled best result**, not absolute SOTA; it is a
 production-viable, lightweight point with statistically significant gains over
 the 224 M-class baselines.
 
@@ -278,12 +280,18 @@ cell is a mean ± std over seeds 42, 43 and 44.  Full protocol:
 
 | Model | Trainable form | Content SROCC | Random SROCC | Δ (random − content) |
 |---|---|---:|---:|---:|
-| CLIP-IQA | frozen CLIP + head | 0.7764 ± 0.0490 | 0.9322 ± 0.0032 | **+0.1558** |
-| ARNIQA | full fine-tune | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
-| TOPIQ | full fine-tune | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
-| MANIQA | frozen ViT + head | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
-| LIQE | full fine-tune, CE | 0.8318 | 0.9184 | **+0.0866** |
+| SigLIP2-L/16 384 | partial fine-tune | 0.9243 | 0.9718 | **+0.0475** |
 | **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
+| MANIQA | official recipe | 0.8611 (9 ep) | 0.9716 (20 ep) | **+0.1105** |
+| TOPIQ | full fine-tune | 0.8470 ± 0.0184 | 0.9528 ± 0.0032 | **+0.1058** |
+| LIQE | full fine-tune, CE | 0.8318 | 0.9184 | **+0.0866** |
+| ARNIQA | full fine-tune | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
+| CLIP-IQA | frozen CLIP + head | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
+
+Five-seed paired tests (42–46) for the models with five seeds: TOPIQ
+p = 0.0003, ARNIQA p = 0.0019, CLIP-IQA p = 0.0005.  Ours is +0.0258 with
+p = 0.12 (three seeds); SigLIP2/LIQE/MANIQA are single-seed.  MANIQA content
+stopped at 9 epochs while random ran 20, so its delta is budget-asymmetric.
 
 A zero-shot control on the same test subsets (no KADID training) shows the
 random subset is not easier: TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383,
@@ -293,17 +301,16 @@ hypothesised 0.02–0.04**.
 
 This is a genuine methodological contribution and it reframes the ranking:
 under the controlled content split our 93 M model reaches **0.9402 ± 0.0176**
-over three single splits (and **0.9481 ± 0.0096** over five folds), while the
-published methods fall to **0.8496 / 0.8438 / 0.8318 / 0.7764 / 0.7892**.  The
-random-split numbers near 0.95 are not comparable to 0.9481; the "third-best
-uncontrolled" framing was too pessimistic.  Our model is also much less
-split-sensitive (+0.026 vs +0.087 to +0.174), although the residual gap shows
-leakage still helps.
+over three single splits (and **0.9481 ± 0.0096** over five folds), while
+SigLIP2-L reaches **0.9243**, MANIQA **0.8611**, and TOPIQ/ARNIQA/LIQE/CLIP
+**0.8470 / 0.8210 / 0.8318 / 0.7716**.  The random-split numbers near 0.97 are
+not comparable to 0.9481.  Our model is also much less split-sensitive
+(+0.026 vs +0.048 to +0.162).
 
-LIQE now has a genuine full fine-tune using its native quality-class
-cross-entropy.  MANIQA full and partial-ViT fine-tuning still collapse to
-constant predictions; its stable frozen-feature probe is retained.  CLIP-IQA is
-also a probe; TOPIQ/ARNIQA/LIQE are fully fine-tuned.
+LIQE and MANIQA now both have genuine full fine-tunes: LIQE with its native
+quality-class CE, MANIQA with the official input/optimizer/loss recipe (the
+`[-1,1]` input scaling was decisive).  CLIP-IQA remains a probe; TOPIQ/ARNIQA
+use our common recipe.
 
 ### 4.9 TID2013 cross-dataset replication
 
@@ -327,6 +334,25 @@ therefore leakage.  The cross-dataset result is qualitatively identical to
 KADID: every published method inflates (+0.066 to +0.272), our model only
 +0.019, and under the controlled content split our 0.9266 is the strongest.
 TID content error bars are wide because only three references are held out.
+
+### 4.10 Controlled comparison with foundation leaders
+
+| Model | Params | Content SROCC | Random SROCC | Note |
+|---|---:|---:|---:|---|
+| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | **0.9481 (5-fold)** | 0.9660 | best controlled |
+| SigLIP2-L/16 384 | 316.6 M | 0.9243 | 0.9718 | strongest reproducible foundation probe |
+| MANIQA (official) | 135.7 M | 0.8611 | 0.9716 | official recipe; 9 vs 20 epochs |
+| TOPIQ | 45.2 M | 0.8470 | 0.9528 | 5 seeds |
+| LIQE | 151.3 M | 0.8318 | 0.9184 | native CE full fine-tune |
+| ARNIQA | 23.5 M | 0.8210 | 0.9545 | 5 seeds |
+| CLIP-IQA | 102.3 M | 0.7716 | 0.9331 | frozen CLIP probe |
+
+Under the controlled content protocol our 93 M model beats SigLIP2-L by
+**+0.0238** while using 3.4× fewer parameters.  SigLIP2's random 0.9718 and
+MANIQA's 0.9716 are inflated by content leakage; they are not evidence that the
+controlled model is worse.  B_Gated could not be reproduced in this environment
+(no public code/checkpoint); it is not claimed.  This is a **controlled best
+result among the models we could run**, not an absolute SOTA claim.
 
 ## 5. What worked, what did not
 
@@ -369,7 +395,7 @@ TID content error bars are wide because only three references are held out.
 3. **Protocol differences.**  Published KADID numbers usually average random
    image-level splits; our content-level CV is stricter and not directly
    comparable.  The split audit (§4.8) shows this is not a minor caveat:
-   random splits inflate the five re-run methods by 0.103–0.174 SROCC.
+   random splits inflate the re-run methods by 0.048–0.162 SROCC on KADID.
 4. **Foundation pretraining is external.**  SigLIP/CLIP weights were trained on
    web-scale data; our claims are about fine-tuning cost, not training from
    scratch.
@@ -383,7 +409,8 @@ TID content error bars are wide because only three references are held out.
    for training, not held out.  Benchmark protocols differ across papers, so
    the authentic comparison is contextual rather than a controlled leaderboard.
 7. **The 0.970 top of the literature remains out of reach.**  The 93 M model
-   is top-3 at 0.9481; closing the last 0.022 likely needs a larger foundation
+   is the controlled best at 0.9481; closing the random-split 0.972 likely needs
+   a larger foundation
    backbone or substantially more labelled authentic data.  Closing it while
    staying under 100 M is an open problem.
 
@@ -401,49 +428,37 @@ TID content error bars are wide because only three references are held out.
 
 ## 8. Conclusion and future work
 
-The project delivers a rigorous, reproducible NR-IQA framework and a
-top-3 lightweight result:
+The project delivers a **controlled benchmark audit plus a lightweight NR-IQA
+model**, not an absolute state-of-the-art claim.
 
-* **0.9481 ± 0.0096 KADID, 0.7429 ± 0.0113 TID, 93.4 M parameters, 10.9 ms,
-  390 MB** — third in the raw mixed-protocol KADID table and, after the split
-  audit, the **best controlled result** among the methods we re-trained;
-* **3.4× fewer parameters, 27% lower latency and ~3× lower memory** than the
-  316 M foundation probes;
-* **0.9481 KADID** from the 316 M teacher as well, confirming that the
-  lightweight model is not trading accuracy for size (p = 0.992);
-* **0.7528 TID** from the 94 M QStatFusion for the pure cross-dataset point;
-* **Split audit:** random image-level KADID splits inflate five published
-  methods by **+0.103 to +0.174 SROCC** (3-seed means); under the matched
-  content split they fall to **0.850 / 0.844 / 0.776 / 0.789 / 0.815**, while
-  our 93 M model reaches **0.9402 ± 0.0176** over three single splits and
-  **0.9481 ± 0.0096** over five folds;
-* **TID2013 replication:** random splits inflate the same methods by
-  **+0.066 to +0.272**, while our model gains only **+0.019**; under the content
-  split our 0.9266 is again the strongest.
+* **0.9481 ± 0.0096 KADID** (5-fold content CV), **0.7429 ± 0.0113 TID2013**,
+  **93.4 M parameters, 10.9 ms, 390 MB**.
+* Under the controlled content split, this is the **best result among the
+  models we could run**: SigLIP2-L 0.9243, MANIQA 0.8611, TOPIQ 0.8470,
+  LIQE 0.8318, ARNIQA 0.8210, CLIP-IQA 0.7716.
+* Random image-level splits inflate the published models by **+0.048 to
+  +0.162** on KADID; five-seed paired tests are significant for TOPIQ
+  (p = 0.0003), ARNIQA (p = 0.0019) and CLIP-IQA (p = 0.0005).  The random
+  leaders at ~0.97 are inflated and not comparable to 0.9481.
+* TID2013 replication confirms the effect (+0.042 to +0.272).  Authentic
+  benchmarks: LIVEC 0.8662, SPAQ 0.8884 for the 93 M model.
+* LIQE and MANIQA now have full fine-tunes; CLIP-IQA is a frozen probe.
 
-The key gains are statistically supported: +0.0274 over the 224-class baseline
-(p = 0.0032), +0.028 from distortion-aware training (p = 0.003), and +0.026 TID
-from KonIQ data scaling.  The KonIQ gain over KADID-only B/16 (+0.0088) is not
-significant with five folds (p = 0.112), which is reported honestly.  The work
-does not establish an absolute state of the art (0.970 remains), and the
-top-3 claim is bounded by the surveyed table; within that scope, it satisfies
-the top-3 + substantially lower-cost success criterion.
+The work does **not** reach the absolute 0.970 random-split number, and B_Gated
+could not be reproduced (no public code/checkpoint).  MANIQA content was stopped
+at 9 epochs versus 20 for random, so its delta is budget-asymmetric.  Several
+headline numbers are single-seed.
 
 The most promising next steps are:
 
-1. **Extend the split audit to MANIQA/LIQE and more seeds.**  MANIQA's fine-tune
-   was numerically unstable in this harness; a stable implementation and two
-   more seeds would turn the single-seed estimate into a distribution.
-2. **Adopt the content split as the default reporting protocol** and publish the
-   controlled numbers alongside the raw table.
-3. **Distortion-manifold pretraining** on unlabeled external images, followed
-   by the same partial fine-tuning recipe (ARNIQA/TRIQA direction).
-4. **Content-grouped ordinal contrastive loss** to explicitly optimise
-   within-content ordering.
-5. **A single multi-scale model** that fuses 224 and 384 evidence instead of
-   paying for a two-model ensemble.
-6. **Knowledge distillation** from a larger foundation teacher into MSOSNet,
-   with the teacher's quality subspace as the target rather than its logits.
+1. **Reproduce B_Gated/SigLIP2 official recipes** under the same content split;
+   this is the missing controlled SOTA comparison.
+2. **Run MANIQA content to 20 epochs** and add seeds for ours/LIQE/SigLIP2.
+3. **Adopt the content split as the default reporting protocol** and publish
+   the controlled numbers alongside the raw table.
+4. **Extend to authentic benchmarks** (SPAQ/LIVEC/KonIQ held out) and
+   distortion-manifold pretraining.
+5. **Release the split definitions and audit tooling** as a benchmark artifact.
 
 ## 9. References
 

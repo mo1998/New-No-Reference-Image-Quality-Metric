@@ -29,9 +29,9 @@ test-time labels.  TTA = horizontal-flip averaging.
 
 The **93 M B/16 + KonIQ** model is the headline: 0.9481 KADID, 0.7429 TID,
 10.9 ms and 390 MB.  It matches the 316 M L/16 teacher exactly (paired
-p = 0.992) with 3.4× fewer parameters and 27% lower latency, and it beats
-MANIQA (0.9460), placing third in the surveyed published KADID-10k table behind
-SigLIP2 and the gated foundation probe (both 0.970).  KonIQ data scaling adds
+p = 0.992) with 3.4× fewer parameters and 27% lower latency, and it is the
+best controlled result among the models we re-ran; the raw mixed-protocol table
+has SigLIP2 and the gated foundation probe at 0.970.  KonIQ data scaling adds
 +0.0088 KADID (p = 0.112) and +0.026 TID over the KADID-only B/16.  The 316 M
 L/16 remains a useful accuracy reference; the 94 M distillation variant
 (0.9421) is dominated by the KonIQ model.  The per-fold spread (B16+KonIQ:
@@ -149,15 +149,17 @@ CV.  Cross-dataset numbers are KADID→TID2013, zero-shot.
 zero-shot number.
 
 **Honest positioning.**  The **93 M B/16 trained on KADID + KonIQ** (0.9481
-KADID, 0.7429 TID) is third in the surveyed published KADID-10k table, behind
-the two ~400 M foundation probes (0.970) and ahead of MANIQA (0.946).  It
+KADID, 0.7429 TID) is the best controlled result among the models we re-ran:
+ahead of SigLIP2-L (0.9243), MANIQA (0.8611), TOPIQ (0.8470), LIQE (0.8318),
+ARNIQA (0.8210) and CLIP-IQA (0.7716).  The random-split leaders at 0.97 are
+inflated; this is not an absolute SOTA claim.  It
 matches the 316 M L/16 teacher exactly (p = 0.992) with **3.4× fewer
 parameters, 27% lower latency and ~3× lower memory**, and it is substantially
 better cross-dataset (0.7429 vs 0.7232).  The 94 M distilled student (0.9421)
 and the 93 M KADID-only model (0.9393) are dominated by this KonIQ-trained
 point.  The 224 model (0.9207 TID 0.7284) and QStatFusion (0.888 TID 0.7528)
 remain the cross-dataset extremes.  We do **not** claim an absolute state of
-the art (0.970 remains); the top-3 claim is bounded by the surveyed table.
+the art (0.970 random-split); this is a controlled best result, not absolute SOTA.
 
 ## 5. Efficiency
 
@@ -233,8 +235,8 @@ training data, not synthetic benchmark fitting, is the decisive factor.
 
 ## 9. Split-protocol bias
 
-Random image-level KADID splits inflate five published NR-IQA methods by
-**+0.103 to +0.174 SROCC** (3-seed means) relative to a matched
+Random image-level KADID splits inflate the re-run NR-IQA methods by
+**+0.048 to +0.162 SROCC** relative to a matched
 content-held-out split; a zero-shot control shows the random test subset is not
 easier.  Under the controlled content split the 93 M KonIQ model reaches
 **0.9402 ± 0.0176** over three single splits / **0.9481 ± 0.0096** five-fold,

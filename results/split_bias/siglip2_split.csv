@@ -1,0 +1,3 @@
+dataset,split,srocc,plcc
+kadid10k,content,0.9243,0.9301
+kadid10k,random,0.9718,0.973

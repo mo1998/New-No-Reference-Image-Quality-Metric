@@ -50,12 +50,13 @@ A complete, reproducible NR-IQA research framework:
 \* single content split (57/8/16 refs), used for rapid iteration.  The 384 and
 224 rows are 5-fold content CV; see `docs/benchmarks.md` for the full table.
 
-**Honest positioning:** these are strong efficiency points, not a new state of
-the art.  Published top methods reach 0.94–0.97 KADID SROCC (MANIQA 0.944,
-LIQE 0.930, SigLIP2 probe 0.970) but are 24–400 M parameters.  Our 93 M model is
-competitive with the 24–48 M specialised networks and significantly better than
-off-the-shelf NR-IQA metrics.  See `docs/final_report.md` §4 for the full
-comparison and the limitations.
+**Honest positioning:** this is a **controlled benchmark audit plus a
+lightweight model**, not an absolute state of the art.  Under the content-held-out
+protocol the 93 M model reaches **0.9481**, ahead of SigLIP2-L (0.9243), MANIQA
+(0.8611), TOPIQ (0.8470), LIQE (0.8318), ARNIQA (0.8210) and CLIP-IQA (0.7716).
+The random-split numbers near 0.97 are inflated by content leakage; B_Gated could
+not be reproduced.  See `docs/final_report.md` §4.10 for the controlled
+comparison.
 
 **Statistically significant findings** (paired content-level bootstrap):
 
@@ -70,18 +71,25 @@ comparison and the limitations.
 ## Split-protocol audit (KADID-10k)
 
 Random image-level splits leak reference content into the test set.  Retraining
-published methods under matched 7,125/1,000/2,000 splits (three seeds) shows the
-inflation directly.  TOPIQ/ARNIQA/LIQE are fully fine-tuned (LIQE with its native
-quality-class CE); CLIP-IQA/MANIQA use stable frozen-feature heads:
+published methods under matched 7,125/1,000/2,000 splits (five seeds where
+available) shows the inflation directly.  TOPIQ/ARNIQA/LIQE and MANIQA are fine-tuned with their
+native/official recipes (LIQE with quality-class CE); CLIP-IQA uses a frozen
+probe:
 
 | Model | Content split SROCC | Random split SROCC | Δ |
 |---|---:|---:|---:|
-| CLIP-IQA (frozen CLIP + head) | 0.7764 ± 0.0490 | 0.9322 ± 0.0032 | **+0.1558** |
-| ARNIQA (full fine-tune) | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
-| TOPIQ (full fine-tune) | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
-| MANIQA (frozen ViT + head) | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
-| LIQE (full fine-tune, CE) | 0.8318 | 0.9184 | **+0.0866** |
-| **Ours, SigLIP-B/16 + KonIQ** | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
+| SigLIP2-L/16 384 (316 M) | 0.9243 | 0.9718 | **+0.0475** |
+| MANIQA (official recipe) | 0.8611 | 0.9716 | **+0.1105** |
+| TOPIQ | 0.8470 ± 0.0184 | 0.9528 ± 0.0032 | **+0.1058** |
+| LIQE (full CE) | 0.8318 | 0.9184 | **+0.0866** |
+| ARNIQA | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
+| CLIP-IQA (probe) | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
+| **Ours, SigLIP-B/16 + KonIQ (93 M)** | **0.9481 (5-fold)** | 0.9660 | **+0.0179** |
+
+Five-seed paired tests: TOPIQ p=0.0003, ARNIQA p=0.0019, CLIP-IQA p=0.0005.
+Under the controlled content split, our 93 M model is the strongest result;
+SigLIP2-L's random 0.9718 and MANIQA's 0.9716 are inflated by content leakage.
+B_Gated was not reproducible in this environment.
 
 A zero-shot control on the same test subsets shows random is *not* easier
 (TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383, ARNIQA 0.737→0.699, LIQE flat), so

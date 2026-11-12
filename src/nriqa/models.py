@@ -842,13 +842,14 @@ class MANIQAStable(nn.Module):
     """MANIQA with local intermediate-feature hooks and deterministic resize."""
 
     def __init__(self, freeze_prefix: str = "", freeze_vit_blocks: int = 0,
-                 class_head: bool = False, **_):
+                 class_head: bool = False, input_half: bool = False, **_):
         super().__init__()
         import pyiqa
 
         metric = pyiqa.create_metric("maniqa", device="cpu")
         self.net = metric.net
         self.class_head = class_head
+        self.input_half = input_half
         if class_head:
             self.quality_head = nn.Sequential(
                 nn.LayerNorm(384),
@@ -885,6 +886,8 @@ class MANIQAStable(nn.Module):
         from einops import rearrange
 
         net = self.net
+        if self.input_half:
+            x = x * 2.0 - 1.0
         x = (x - net.default_mean.to(x)) / net.default_std.to(x)
         if x.shape[-1] != 224 or x.shape[-2] != 224:
             x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)

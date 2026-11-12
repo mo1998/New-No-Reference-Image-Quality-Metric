@@ -1,0 +1,23 @@
+include: base_pyiqa.yaml
+experiment:
+  name: maniqa_official
+model:
+  name: maniqa_stable
+  kwargs:
+    input_half: true
+train:
+  batch_size: 8
+  lr: 1.0e-5
+  weight_decay: 1.0e-5
+  epochs: 20
+  amp: false
+  optimizer: adam
+  label_norm: none
+  grad_clip: 1.0
+  loss:
+    mse: 1.0
+    plcc: 0.0
+    rank: 0.0
+    content_rank: 0.0
+eval:
+  batch_size: 8

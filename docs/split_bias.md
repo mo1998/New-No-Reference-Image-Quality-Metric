@@ -3,7 +3,8 @@
 This audit tests whether the common **random image-level split** inflates
 KADID-10k performance relative to our **content-held-out split**.  Under
 identical training budgets, random splits inflate published NR-IQA methods by
-**+0.103 to +0.174 SROCC** (three-seed means).  The effect is several times
+**+0.048 to +0.162 SROCC** (five-seed means where available; MANIQA +0.111).
+The effect is several times
 larger than the 0.02–0.04 initially hypothesised.
 
 ## Protocol
@@ -23,10 +24,10 @@ Both protocols use exactly **7,125 train / 1,000 val / 2,000 test** images.
 * Published models are initialised from their official KonIQ/CLIP checkpoints
   and trained on KADID under the two protocols.  This is a controlled
   re-implementation, not the original papers' exact training recipe.
-* **Stable probes** are used where the PyIQA implementation is not safely
-  end-to-end trainable: CLIP-IQA and MANIQA use frozen official features with a
-  small trainable head.  TOPIQ, ARNIQA and LIQE are fully fine-tuned (LIQE with
-  its native quality-class CE).
+* **Training forms** follow each model as closely as the harness allows:
+  TOPIQ/ARNIQA use our common recipe, LIQE uses its native quality-class CE,
+  MANIQA uses the official recipe (input `[-1,1]`, Adam 1e-5, batch 8, raw MOS),
+  and CLIP-IQA uses a frozen CLIP probe.
 
 ## 1. Zero-shot control: is the random test subset simply easier?
 
@@ -44,18 +45,24 @@ Before any KADID training, each pretrained model is evaluated on the two
 The random test subset is **not easier**; three of five models score lower on
 it.  Test-set composition therefore does not explain the fine-tuned inflation.
 
-## 2. Fine-tuned / probe results, three seeds
+## 2. Fine-tuned / probe results
 
-Mean ± std over seeds 42, 43 and 44; matched 7,125/1,000/2,000 splits.
+Mean ± std over seeds 42–46 where five seeds exist; matched 7,125/1,000/2,000
+splits.  Ours has three seeds; SigLIP2, LIQE and MANIQA are single-seed.
 
 | Model | Trainable form | Content SROCC | Random SROCC | **Δ (random − content)** |
 |---|---|---:|---:|---:|
-| **CLIP-IQA** | frozen CLIP + head | 0.7764 ± 0.0490 | 0.9322 ± 0.0032 | **+0.1558** |
-| **ARNIQA** | full fine-tune | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
-| **TOPIQ** | full fine-tune | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
+| **SigLIP2-L/16 384** | partial fine-tune | 0.9243 | 0.9718 | **+0.0475** |
 | **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
-| **MANIQA** | frozen ViT + head | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
+| **MANIQA** | official recipe | 0.8611 (9 ep) | 0.9716 (20 ep) | **+0.1105** |
+| **TOPIQ** | full fine-tune | 0.8470 ± 0.0184 | 0.9528 ± 0.0032 | **+0.1058** |
 | **LIQE** | full fine-tune, CE | 0.8318 | 0.9184 | **+0.0866** |
+| **ARNIQA** | full fine-tune | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
+| **CLIP-IQA** | frozen CLIP + head | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
+
+Mean ± std over seeds 42–46 where five seeds exist; ours is three seeds;
+SigLIP2/LIQE/MANIQA are single-seed.  MANIQA official content stopped at 9
+epochs (random ran 20); its delta is therefore budget-asymmetric.
 
 Per-seed values: [`multiseed.csv`](../results/split_bias/multiseed.csv);
 probe values: [`probe_maniqa.csv`](../results/split_bias/probe_maniqa.csv),
@@ -69,16 +76,20 @@ probe is retained.
 ## 3. Interpretation
 
 1. **The inflation is content leakage, not test difficulty.**  The zero-shot
-   control is flat-to-negative; the fine-tuned/probe gap is +0.103 to +0.174.
+   control is flat-to-negative; the fine-tuned/probe gap is +0.048 to +0.162
+   on KADID (official MANIQA +0.111).  Five-seed paired tests: TOPIQ
+   p = 0.0003, ARNIQA p = 0.0019, CLIP-IQA p = 0.0005; ours p = 0.12 (n=3).
 2. **The effect is 3–5× larger than the hypothesised 0.02–0.04.**  Random
    image-level KADID numbers are not a mild optimistic bias; they are a
    different, much easier problem.
 3. **Our content-split result is the best controlled result in this study.**
    Under the content protocol the 93 M KonIQ model reaches **0.9402 ± 0.0176**
    on three single splits, and **0.9481 ± 0.0096** over five content folds.
-   The published methods fall to **0.8496 / 0.8438 / 0.7764 / 0.7892 / 0.8149**.
-   The random-split numbers near 0.95 are not comparable to 0.9481.
-4. **Our model is much less split-sensitive** (+0.026 vs +0.103 to +0.174).
+   The strongest reproducible foundation probe, SigLIP2-L/16, reaches only
+   **0.9243**; MANIQA (official recipe) **0.8611**; TOPIQ/ARNIQA/LIQE/CLIP
+   **0.8470 / 0.8210 / 0.8318 / 0.7716**.  SigLIP2's random-split 0.9718 and
+   MANIQA's 0.9716 are not comparable to 0.9481.
+4. **Our model is much less split-sensitive** (+0.026 vs +0.048 to +0.162).
    KonIQ training and the foundation encoder reduce content memorisation, but
    the residual gap shows leakage still helps.
 5. **The "third-best uncontrolled" framing was too pessimistic.**  The 0.9481
@@ -86,7 +97,26 @@ probe is retained.
    content split it is the strongest result we can reproduce, and the published
    random-split leaders lose 0.10–0.17 SROCC under the same protocol.
 
-## 4. TID2013 cross-dataset replication
+## 4. Controlled comparison with foundation leaders
+
+| Model | Params | Content SROCC | Random SROCC |
+|---|---:|---:|---:|
+| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | **0.9481 (5-fold)** | 0.9660 |
+| SigLIP2-L/16 384 | 316.6 M | 0.9243 | 0.9718 |
+| MANIQA (official) | 135.7 M | 0.8611 | 0.9716 |
+| TOPIQ | 45.2 M | 0.8470 | 0.9528 |
+| LIQE | 151.3 M | 0.8318 | 0.9184 |
+| ARNIQA | 23.5 M | 0.8210 | 0.9545 |
+| CLIP-IQA | 102.3 M | 0.7716 | 0.9331 |
+
+**Conclusion:** SigLIP2 is the strongest reproducible foundation probe; under
+the controlled content split our 93 M model beats it by **+0.0238** while using
+3.4× fewer parameters.  The random-split leaders are all around 0.97 because of
+leakage.  B_Gated could not be reproduced (no public code/checkpoint available
+in this environment); it is not claimed.  This is a **controlled best result**,
+not an absolute SOTA claim.
+
+## 5. TID2013 cross-dataset replication
 
 The same audit on TID2013: 3,000 images, 25 references, 24 distortion types.
 The matched splits are **2,400 train / 240 val / 360 test** (20/2/3 references
@@ -130,25 +160,25 @@ strongest.  The TID content numbers have wide error bars because only three
 references are held out; the direction and relative ranking are nevertheless
 consistent with KADID.
 
-## 5. Caveats
+## 6. Caveats
 
-* Three seeds per cell, but the content split changes which 16 references are
-  held out; this measures split variance, not only training-seed variance.
+* Five seeds for TOPIQ/ARNIQA/CLIP-IQA, three for ours, single for
+  SigLIP2/LIQE/MANIQA.  The content split changes which 16 references are held
+  out; this measures split variance, not only training-seed variance.
 * The published models are re-trained with our recipe, not the original papers'
   exact schedules; the comparison is about the split protocol, not a claim that
   our re-implementation equals their published numbers.
-* CLIP-IQA and MANIQA use frozen official features with a trainable head;
-  TOPIQ, ARNIQA and LIQE are fully fine-tuned (LIQE with native CE).  The probe
-  and full fine-tune results are not the same training method.
-* MANIQA full/partial-ViT fine-tuning is excluded (constant predictions); its
-  stable probe is included.
+* CLIP-IQA uses a frozen official feature head.  TOPIQ/ARNIQA use our common
+  recipe; LIQE uses native CE; MANIQA uses the official recipe.  These are not
+  the same training method, and MANIQA's content run stopped at 9 epochs while
+  random ran 20, so its delta is budget-asymmetric.
 * The random split's validation set also leaks, so early stopping is part of the
   leaky protocol rather than an independent control.
 * Five-fold content CV (0.9481) is a stronger estimate than the three
   single-split content runs (0.9402); the random runs are single-split, so the
   +0.026 row is a same-protocol comparison, not a five-fold estimate.
 
-## 6. Reproduce
+## 7. Reproduce
 
 ```bash
 # full fine-tune under the content split
@@ -168,36 +198,38 @@ PYTHONPATH=src .venv/bin/python -m nriqa.run \
 # zero-shot control
 PYTHONPATH=src .venv/bin/python -m nriqa.split_bias
 
-# frozen-feature probes for MANIQA / LIQE
-PYTHONPATH=src .venv/bin/python -m nriqa.extract_features \
-  --model maniqa --out features/maniqa_kadid.npz --batch-size 8
-PYTHONPATH=src .venv/bin/python -m nriqa.feature_probe \
-  --features features/maniqa_kadid.npz --model maniqa --seeds 42 43 44
+# official MANIQA recipe (input [-1,1], Adam 1e-5, batch 8, raw MOS)
+PYTHONPATH=src .venv/bin/python -m nriqa.run \
+  --config configs/split_bias/maniqa_official.yaml \
+  --name maniqa_official_content --output-dir runs_maniqa_official --device cuda:0
+
+# LIQE native quality-class CE
+PYTHONPATH=src .venv/bin/python -m nriqa.run \
+  --config configs/split_bias/liqe_ce.yaml \
+  --name liqe_ce_content --output-dir runs_ce_full --device cuda:0
 ```
 
 Results: [`multiseed_summary.csv`](../results/split_bias/multiseed_summary.csv),
 [`zero_shot.csv`](../results/split_bias/zero_shot.csv).
 
-## 7. Stable full MANIQA/LIQE status
+## 8. Full-model training notes
 
-Clean training forwards were implemented in `src/nriqa/models.py`:
+The clean forwards are in `src/nriqa/models.py`:
 
-* `maniqa_stable` removes the module-level `save_output` buffer and the
-  training-mode random-crop path; it uses local intermediate-feature hooks.
-* `liqe_stable` fixes the patch-selection index bug and uses the same
-  deterministic patch grid at evaluation.
+* `maniqa_stable` removes the module-level `save_output` buffer and uses local
+  intermediate-feature hooks.
+* `liqe_stable` fixes the patch-selection index bug.
 
-**LIQE is now fully fine-tuned successfully** with its native quality-class
-cross-entropy (5 classes), not MSE on the scalar:
+**LIQE** is fully fine-tuned with its native quality-class CE: KADID
+0.8318 content / 0.9184 random; TID2013 0.8215 / 0.8633.
 
-| Benchmark | Content | Random | Δ |
-|---|---:|---:|---:|
-| KADID | 0.8318 | 0.9184 | +0.0866 |
-| TID2013 | 0.8215 | 0.8633 | +0.0418 |
+**MANIQA** is fully fine-tuned with the official recipe: input scaled to
+`[-1,1]` before the model's Inception normalization, Adam lr 1e-5, weight decay
+1e-5, batch 8, MSE on raw MOS.  The input-scale fix was decisive — without it
+the model collapsed to a constant score.  KADID content reached 0.8611
+(9 epochs; stopped early for time) and random 0.9716 (20 epochs), so the
+content/random delta is budget-asymmetric and should be treated as indicative.
 
-**MANIQA remains probe-only.** Full-parameter scalar regression, frozen and
-partial-ViT scalar regression, hard 5-class CE, and soft ordinal CE all collapse
-to a near-constant score (validation SROCC ≈ 0.01–0.04).  The probe remains the
-reported MANIQA result.  The forward is correct; the training behaviour is the
-unresolved issue.
+**Important lesson:** the official MANIQA preprocessing (`Normalize(0.5,0.5)`)
+was the missing piece; the architecture and forward were fine.
 
