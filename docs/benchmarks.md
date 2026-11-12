@@ -233,9 +233,10 @@ training data, not synthetic benchmark fitting, is the decisive factor.
 
 ## 9. Split-protocol bias
 
-Random image-level KADID splits inflate published NR-IQA models by
-**+0.116 to +0.188 SROCC** relative to a matched content-held-out split; a
-zero-shot control shows the random test subset is not easier.  Under the
-controlled content split the 93 M KonIQ model reaches 0.9211 single-split /
-0.9481 five-fold, while TOPIQ/ARNIQA/CLIP-IQA reach 0.841/0.838/0.746.
+Random image-level KADID splits inflate five published NR-IQA methods by
+**+0.103 to +0.174 SROCC** (3-seed means) relative to a matched
+content-held-out split; a zero-shot control shows the random test subset is not
+easier.  Under the controlled content split the 93 M KonIQ model reaches
+**0.9402 ± 0.0176** over three single splits / **0.9481 ± 0.0096** five-fold,
+while the published methods reach 0.850/0.844/0.776/0.789/0.815.
 Details and caveats: [split_bias.md](split_bias.md).

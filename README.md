@@ -69,22 +69,27 @@ comparison and the limitations.
 
 ## Split-protocol audit (KADID-10k)
 
-Random image-level splits leak reference content into the test set.  Re-training
-three published models under matched 7,125/1,000/2,000 splits shows the
-inflation directly:
+Random image-level splits leak reference content into the test set.  Retraining
+published methods under matched 7,125/1,000/2,000 splits (three seeds) shows the
+inflation directly.  TOPIQ/ARNIQA are fully fine-tuned; CLIP-IQA/MANIQA/LIQE use
+stable frozen-feature heads because their PyIQA implementations are not safely
+end-to-end trainable:
 
 | Model | Content split SROCC | Random split SROCC | Δ |
 |---|---:|---:|---:|
-| CLIP-IQA (frozen CLIP + head) | 0.7464 | 0.9340 | **+0.1875** |
-| ARNIQA | 0.8382 | 0.9569 | **+0.1187** |
-| TOPIQ | 0.8413 | 0.9569 | **+0.1157** |
-| **Ours, SigLIP-B/16 + KonIQ** | **0.9211** | 0.9659 | **+0.0448** |
+| CLIP-IQA (frozen CLIP + head) | 0.7764 ± 0.0490 | 0.9322 ± 0.0032 | **+0.1558** |
+| ARNIQA (full fine-tune) | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
+| TOPIQ (full fine-tune) | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
+| MANIQA (frozen ViT + head) | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
+| LIQE (frozen CLIP + head) | 0.8149 ± 0.0041 | 0.9469 ± 0.0014 | **+0.1321** |
+| **Ours, SigLIP-B/16 + KonIQ** | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
 
 A zero-shot control on the same test subsets shows random is *not* easier
-(TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383, ARNIQA 0.737→0.699), so this is
-content leakage, not test composition.  Under the controlled content protocol
-our 93 M model (0.9211 single split, **0.9481 ± 0.0096** over five folds) is the
-best controlled result; the random-split numbers near 0.95 are not comparable.
+(TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383, ARNIQA 0.737→0.699, LIQE flat), so
+this is content leakage, not test composition.  Under the controlled content
+protocol our 93 M model (0.9402 ± 0.0176 over three splits, **0.9481 ± 0.0096**
+over five folds) is the best controlled result; the random-split numbers near
+0.95 are not comparable.
 Full protocol, caveats and reproduction: [split-protocol audit](docs/split_bias.md).
 
 ## Authentic-distortion results (zero-shot)

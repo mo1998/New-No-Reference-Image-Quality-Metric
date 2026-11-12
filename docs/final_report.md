@@ -41,9 +41,9 @@ than SigLIP alone (0.726, paired bootstrap p = 0.003), at 93.8 M parameters.
 mixed-protocol* surveyed table (SigLIP2 / B_Gated 0.970), above MANIQA (0.946),
 LoDa (0.931) and ARNIQA (0.908).  After the split-protocol audit
 (§4.8), this framing is too pessimistic: random image-level splits inflate
-TOPIQ/ARNIQA/CLIP-IQA by **+0.116 to +0.188**, and under a matched content
-split those models fall to **0.841 / 0.838 / 0.746** while ours stays at
-**0.9211 single-split / 0.9481 five-fold**.  The 0.9481 is therefore the best
+five published methods by **+0.103 to +0.174**, and under a matched content
+split those methods fall to **0.850 / 0.844 / 0.776 / 0.789 / 0.815** while ours
+stays at **0.9402 three-split / 0.9481 five-fold**.  The 0.9481 is therefore the best
 *controlled* result in this study, not the third-best uncontrolled one.  It does
 so with **93.4 M parameters, 10.9 ms and 390 MB** — 3.4× fewer parameters,
 27% lower latency and roughly 3× lower memory than the 316 M foundation
@@ -271,36 +271,40 @@ foundation probes.
 ### 4.8 Split-protocol bias: random vs content
 
 The KADID-10k literature mostly uses random image-level splits, which leak
-reference content into the test set.  Re-training three published models under
-matched 7,125/1,000/2,000 random and content-held-out splits isolates the
-effect.  Full protocol: [split_bias.md](split_bias.md).
+reference content into the test set.  Retraining published models under matched
+7,125/1,000/2,000 random and content-held-out splits isolates the effect; each
+cell is a mean ± std over seeds 42, 43 and 44.  Full protocol:
+[split_bias.md](split_bias.md).
 
-| Model | Content SROCC | Random SROCC | Δ (random − content) |
-|---|---:|---:|---:|
-| CLIP-IQA (frozen CLIP + trainable head) | 0.7464 | 0.9340 | **+0.1875** |
-| ARNIQA (full fine-tune) | 0.8382 | 0.9569 | **+0.1187** |
-| TOPIQ (full fine-tune) | 0.8413 | 0.9569 | **+0.1157** |
-| **Ours, SigLIP-B/16 + KonIQ** | **0.9211** | 0.9659 | **+0.0448** |
+| Model | Trainable form | Content SROCC | Random SROCC | Δ (random − content) |
+|---|---|---:|---:|---:|
+| CLIP-IQA | frozen CLIP + head | 0.7764 ± 0.0490 | 0.9322 ± 0.0032 | **+0.1558** |
+| ARNIQA | full fine-tune | 0.8438 ± 0.0170 | 0.9537 ± 0.0035 | **+0.1099** |
+| TOPIQ | full fine-tune | 0.8496 ± 0.0245 | 0.9521 ± 0.0042 | **+0.1025** |
+| MANIQA | frozen ViT + head | 0.7892 ± 0.0649 | 0.9627 ± 0.0027 | **+0.1735** |
+| LIQE | frozen CLIP + head | 0.8149 ± 0.0041 | 0.9469 ± 0.0014 | **+0.1321** |
+| **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | **0.9402 ± 0.0176** | 0.9660 ± 0.0018 | **+0.0258** |
 
 A zero-shot control on the same test subsets (no KADID training) shows the
 random subset is not easier: TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383,
-ARNIQA 0.737→0.699, MANIQA 0.387→0.399.  The inflation is therefore content
-leakage, not test composition.  It is **3–5× larger than the hypothesised
-0.02–0.04**.
+ARNIQA 0.737→0.699, MANIQA 0.387→0.399, LIQE 0.727→0.727.  The inflation is
+therefore content leakage, not test composition.  It is **3–5× larger than the
+hypothesised 0.02–0.04**.
 
 This is a genuine methodological contribution and it reframes the ranking:
-under the controlled content split our 93 M model reaches **0.9211** on the
-single split (and **0.9481 ± 0.0096** over five folds), while the published
-models drop to **0.8413 / 0.8382 / 0.7464**.  The random-split numbers near
-0.95 are not comparable to 0.9481; the "third-best uncontrolled" framing was
-too pessimistic.  Our model is also much less split-sensitive (+0.045 vs
-+0.116 to +0.188), although the residual gap shows leakage still helps.
+under the controlled content split our 93 M model reaches **0.9402 ± 0.0176**
+over three single splits (and **0.9481 ± 0.0096** over five folds), while the
+published methods fall to **0.8496 / 0.8438 / 0.7764 / 0.7892 / 0.8149**.  The
+random-split numbers near 0.95 are not comparable to 0.9481; the "third-best
+uncontrolled" framing was too pessimistic.  Our model is also much less
+split-sensitive (+0.026 vs +0.103 to +0.174), although the residual gap shows
+leakage still helps.
 
-MANIQA could not be fine-tuned reliably: its PyIQA implementation stores
-intermediate ViT outputs in a module-level `save_output` buffer and produced
-NaN losses even with AMP off, a frozen ViT and small batches.  Its zero-shot
-split control is included; it is excluded from the fine-tuned table rather than
-reporting an unstable number.
+MANIQA full fine-tuning was not usable in this harness: its PyIQA
+implementation stores intermediate ViT outputs in a module-level `save_output`
+buffer and produced NaN losses even with AMP off, a frozen ViT and small
+batches.  Its stable frozen-feature probe is included; CLIP-IQA and LIQE are
+also frozen-feature probes, while TOPIQ/ARNIQA are fully fine-tuned.
 
 ## 5. What worked, what did not
 
@@ -343,7 +347,7 @@ reporting an unstable number.
 3. **Protocol differences.**  Published KADID numbers usually average random
    image-level splits; our content-level CV is stricter and not directly
    comparable.  The split audit (§4.8) shows this is not a minor caveat:
-   random splits inflate TOPIQ/ARNIQA/CLIP-IQA by 0.116–0.188 SROCC.
+   random splits inflate the five re-run methods by 0.103–0.174 SROCC.
 4. **Foundation pretraining is external.**  SigLIP/CLIP weights were trained on
    web-scale data; our claims are about fine-tuning cost, not training from
    scratch.
@@ -386,10 +390,11 @@ top-3 lightweight result:
 * **0.9481 KADID** from the 316 M teacher as well, confirming that the
   lightweight model is not trading accuracy for size (p = 0.992);
 * **0.7528 TID** from the 94 M QStatFusion for the pure cross-dataset point;
-* **Split audit:** random image-level KADID splits inflate TOPIQ/ARNIQA/CLIP-IQA
-  by **+0.116 to +0.188 SROCC**; under the matched content split those models
-  fall to **0.841 / 0.838 / 0.746**, while our 93 M model reaches **0.9211**
-  single-split and **0.9481** over five folds.
+* **Split audit:** random image-level KADID splits inflate five published
+  methods by **+0.103 to +0.174 SROCC** (3-seed means); under the matched
+  content split they fall to **0.850 / 0.844 / 0.776 / 0.789 / 0.815**, while
+  our 93 M model reaches **0.9402 ± 0.0176** over three single splits and
+  **0.9481 ± 0.0096** over five folds.
 
 The key gains are statistically supported: +0.0274 over the 224-class baseline
 (p = 0.0032), +0.028 from distortion-aware training (p = 0.003), and +0.026 TID
