@@ -832,6 +832,112 @@ class CLIPIQAProbe(nn.Module):
         return self.head(f.float()).squeeze(-1)
 
 
+
+
+# ---------------------------------------------------------------------------
+# Clean training forwards for PyIQA architectures whose original training
+# path is unstable (MANIQA global buffer / LIQE patch-index bug).
+# ---------------------------------------------------------------------------
+class MANIQAStable(nn.Module):
+    """MANIQA with local intermediate-feature hooks and deterministic resize."""
+
+    def __init__(self, freeze_prefix: str = "", **_):
+        super().__init__()
+        import pyiqa
+
+        metric = pyiqa.create_metric("maniqa", device="cpu")
+        self.net = metric.net
+        # Remove the original hooks that write to the module-level save_output.
+        for block in self.net.vit.blocks:
+            block._forward_hooks.clear()
+        if freeze_prefix:
+            for name, p in self.net.named_parameters():
+                if name.startswith(freeze_prefix):
+                    p.requires_grad_(False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        import torch.nn.functional as F
+        from einops import rearrange
+
+        net = self.net
+        x = (x - net.default_mean.to(x)) / net.default_std.to(x)
+        if x.shape[-1] != 224 or x.shape[-2] != 224:
+            x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+        bsz = x.shape[0]
+        feats = []
+        handles = [
+            net.vit.blocks[i].register_forward_hook(
+                lambda _m, _i, out: feats.append(out)
+            )
+            for i in (6, 7, 8, 9)
+        ]
+        try:
+            net.vit(x)
+        finally:
+            for h in handles:
+                h.remove()
+        f = torch.cat([t[:, 1:] for t in feats], dim=2)
+
+        f = rearrange(f, "b (h w) c -> b c (h w)", h=net.input_size, w=net.input_size)
+        for tab in net.tablock1:
+            f = tab(f)
+        f = rearrange(f, "b c (h w) -> b c h w", h=net.input_size, w=net.input_size)
+        f = net.conv1(f)
+        f = net.swintransformer1(f)
+
+        f = rearrange(f, "b c h w -> b c (h w)", h=net.input_size, w=net.input_size)
+        for tab in net.tablock2:
+            f = tab(f)
+        f = rearrange(f, "b c (h w) -> b c h w", h=net.input_size, w=net.input_size)
+        f = net.conv2(f)
+        f = net.swintransformer2(f)
+        f = rearrange(f, "b c h w -> b (h w) c", h=net.input_size, w=net.input_size)
+
+        score = net.fc_score(f).reshape(bsz, -1)
+        weight = net.fc_weight(f).reshape(bsz, -1)
+        return (weight * score).sum(-1) / (weight.sum(-1) + 1e-8)
+
+
+class LIQEStable(nn.Module):
+    """LIQE with the training patch-selection index bug fixed."""
+
+    def __init__(self, **_):
+        super().__init__()
+        import pyiqa
+
+        metric = pyiqa.create_metric("liqe", device="cpu")
+        self.net = metric.net
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        import torch.nn.functional as F
+
+        net = self.net
+        bs = x.shape[0]
+        x = (x - net.default_mean.to(x)) / net.default_std.to(x)
+        if x.shape[-1] < 224 or x.shape[-2] < 224:
+            x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+        x = x.unfold(2, 224, net.step).unfold(3, 224, net.step)
+        x = x.permute(0, 2, 3, 1, 4, 5).reshape(bs, -1, 3, 224, 224)
+        num_patch = min(net.num_patch, x.size(1))
+        if self.training:
+            # Correct dimension: choose over patches, not over the batch.
+            sel = torch.randperm(x.size(1), device=x.device)[:num_patch]
+        else:
+            step = max(1, x.size(1) // num_patch)
+            sel = torch.arange(num_patch, device=x.device) * step
+        x = x[:, sel, ...].reshape(bs, num_patch, 3, 224, 224)
+        text = net.text_features.to(x)
+        x = x.reshape(bs * num_patch, 3, 224, 224)
+        image = net.clip_model.encode_image(x, pos_embedding=True)
+        image = image / image.norm(dim=1, keepdim=True)
+        logits = net.clip_model.logit_scale.exp() * image @ text.t()
+        logits = F.softmax(logits.view(bs, num_patch, -1).mean(1), dim=1)
+        if net.mtl:
+            logits = logits.view(-1, 5, 9, 11)
+            logits = logits.sum(3).sum(2)
+        return (logits * torch.arange(1, 6, device=x.device, dtype=logits.dtype)).sum(1)
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
@@ -850,6 +956,8 @@ _MODEL_REGISTRY = {
     "siglip2_regressor": Siglip2Regressor,
     "pyiqa_net_regressor": PyIQANetRegressor,
     "clipiqa_probe": CLIPIQAProbe,
+    "maniqa_stable": MANIQAStable,
+    "liqe_stable": LIQEStable,
 }
 
 

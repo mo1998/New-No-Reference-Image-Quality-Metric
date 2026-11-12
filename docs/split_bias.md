@@ -176,3 +176,29 @@ PYTHONPATH=src .venv/bin/python -m nriqa.feature_probe \
 
 Results: [`multiseed_summary.csv`](../results/split_bias/multiseed_summary.csv),
 [`zero_shot.csv`](../results/split_bias/zero_shot.csv).
+
+## 7. Stable full MANIQA/LIQE status
+
+Clean training forwards were implemented in `src/nriqa/models.py`:
+
+* `maniqa_stable` removes the module-level `save_output` buffer and the
+  training-mode random-crop path; it uses local intermediate-feature hooks.
+* `liqe_stable` fixes the patch-selection index bug
+  (`randint(high=batch)` → `randperm(high=num_patches)`) and uses the same
+  deterministic patch grid at evaluation.
+
+Both clean forwards reproduce the official eval outputs.  Full fine-tuning is
+still not competitive:
+
+| Attempt | Outcome |
+|---|---|
+| MANIQA, full parameters, clean forward | NaN after one full epoch; stable for ~1,600 steps |
+| MANIQA, frozen ViT + clean post-ViT head | finite loss but constant predictions (SROCC NaN) |
+| LIQE, clean forward, lr 1e-7 | stable 4 epochs; random SROCC 0.749, far below the 0.947 probe |
+| LIQE, clean forward, lr 5e-7 | diverges (val SROCC 0.48 → 0.30) |
+
+The probes therefore remain the reported MANIQA/LIQE results.  The clean
+forwards are committed for future work, but replacing the training objective
+(e.g. LIQE's text-classification loss rather than MSE on the scalar score) is
+the next necessary step.
+
