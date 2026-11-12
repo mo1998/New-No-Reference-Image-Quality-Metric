@@ -195,8 +195,9 @@ cross-entropy (5 classes), not MSE on the scalar:
 | KADID | 0.8318 | 0.9184 | +0.0866 |
 | TID2013 | 0.8215 | 0.8633 | +0.0418 |
 
-**MANIQA remains probe-only.** Full-parameter and frozen/partial-ViT clean
-fine-tunes still collapse to constant predictions (val SROCC NaN).  The probe
-remains the reported MANIQA result.  The MANIQA forward itself is correct; its
-training behaviour is the unresolved issue.
+**MANIQA remains probe-only.** Full-parameter scalar regression, frozen and
+partial-ViT scalar regression, hard 5-class CE, and soft ordinal CE all collapse
+to a near-constant score (validation SROCC ≈ 0.01–0.04).  The probe remains the
+reported MANIQA result.  The forward is correct; the training behaviour is the
+unresolved issue.
 

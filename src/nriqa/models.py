@@ -841,12 +841,26 @@ class CLIPIQAProbe(nn.Module):
 class MANIQAStable(nn.Module):
     """MANIQA with local intermediate-feature hooks and deterministic resize."""
 
-    def __init__(self, freeze_prefix: str = "", freeze_vit_blocks: int = 0, **_):
+    def __init__(self, freeze_prefix: str = "", freeze_vit_blocks: int = 0,
+                 class_head: bool = False, **_):
         super().__init__()
         import pyiqa
 
         metric = pyiqa.create_metric("maniqa", device="cpu")
         self.net = metric.net
+        self.class_head = class_head
+        if class_head:
+            self.quality_head = nn.Sequential(
+                nn.LayerNorm(384),
+                nn.Linear(384, 256),
+                nn.GELU(),
+                nn.Dropout(0.2),
+                nn.Linear(256, 5),
+            )
+            for p in self.net.fc_score.parameters():
+                p.requires_grad_(False)
+            for p in self.net.fc_weight.parameters():
+                p.requires_grad_(False)
         # Remove the original hooks that write to the module-level save_output.
         for block in self.net.vit.blocks:
             block._forward_hooks.clear()
@@ -866,7 +880,7 @@ class MANIQAStable(nn.Module):
                     for p in mod.parameters():
                         p.requires_grad_(False)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward(self, x: torch.Tensor):
         import torch.nn.functional as F
         from einops import rearrange
 
@@ -904,9 +918,24 @@ class MANIQAStable(nn.Module):
         f = net.swintransformer2(f)
         f = rearrange(f, "b c h w -> b (h w) c", h=net.input_size, w=net.input_size)
 
+        if self.class_head:
+            logits = self.quality_head(f.mean(dim=1))
+            probs = torch.softmax(logits, dim=1)
+            quality = (probs * torch.arange(1, 6, device=x.device, dtype=probs.dtype)).sum(1)
+            return quality, logits
         score = net.fc_score(f).reshape(bsz, -1)
         weight = net.fc_weight(f).reshape(bsz, -1)
         return (weight * score).sum(-1) / (weight.sum(-1) + 1e-8)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self._forward(x)
+        return out[0] if isinstance(out, tuple) else out
+
+    def forward_aux(self, x: torch.Tensor):
+        out = self._forward(x)
+        if isinstance(out, tuple):
+            return out[0], {"quality_logits": out[1]}
+        return out, {}
 
 
 class LIQEStable(nn.Module):

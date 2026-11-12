@@ -187,7 +187,8 @@ class Trainer:
         n_batches = 0
         use_aux = (
             (float(loss_cfg.get("aux_distortion", 0.0)) > 0
-             or float(loss_cfg.get("quality_ce", 0.0)) > 0)
+             or float(loss_cfg.get("quality_ce", 0.0)) > 0
+             or float(loss_cfg.get("quality_soft", 0.0)) > 0)
             and hasattr(self.model, "forward_aux")
         )
         use_feature = (
@@ -224,19 +225,26 @@ class Trainer:
                         teacher_feat = batch["tfeat"].to(self.device, dtype=torch.float32)[tmask]
                         student_proj = aux.get("proj")[tmask] if aux is not None else None
                 quality = None
+                quality_soft = None
+                ds_name = str(self.cfg["data"].get("dataset", "kadid10k")).lower()
+                scale = 9.0 if ds_name.startswith("tid") else 5.0
                 if float(loss_cfg.get("quality_ce", 0.0)) > 0:
-                    ds = str(self.cfg["data"].get("dataset", "kadid10k")).lower()
-                    if ds.startswith("tid"):
+                    if ds_name.startswith("tid"):
                         quality = ((mos / 9.0) * 4.0).round().long().clamp(0, 4)
                     else:
                         quality = (mos.round().long() - 1).clamp(0, 4)
+                if float(loss_cfg.get("quality_soft", 0.0)) > 0:
+                    centers = torch.arange(1, 6, device=mos.device, dtype=mos.dtype)
+                    mos5 = mos if ds_name.startswith("kadid") else mos / scale * 5.0
+                    d = (mos5[:, None] - centers[None, :]) / 0.6
+                    quality_soft = torch.softmax(-0.5 * d * d, dim=1)
                 loss, parts = compute_loss(
                     pred, target, loss_cfg, aux=aux,
                     dist_type=batch["dist_type"].to(self.device) if use_aux else None,
                     level=batch["level"].to(self.device) if use_aux else None,
                     refs=batch["ref"], soft=soft,
                     teacher_feat=teacher_feat, student_proj=student_proj,
-                    quality=quality,
+                    quality=quality, quality_soft=quality_soft,
                     aux_mask=aux_mask,
                 )
             self.scaler.scale(loss).backward()
