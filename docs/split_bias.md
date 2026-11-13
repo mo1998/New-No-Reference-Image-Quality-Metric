@@ -51,17 +51,23 @@ Mean ± std over seeds 42–46; matched 7,125/1,000/2,000 splits.
 
 | Model | Trainable form | Content SROCC | Random SROCC | **Δ (random − content)** |
 |---|---|---:|---:|---:|
-| **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | **0.9416 ± 0.0137** | 0.9670 ± 0.0019 | **+0.0253** |
+| **B_Gated + LoRA** | SigLIP2-L + LoRA + gated head | **0.9424 ± 0.0088** | 0.9731 ± 0.0010 | **+0.0307** |
+| **Ours, SigLIP-B/16 + KonIQ** | full fine-tune | 0.9416 ± 0.0137 | 0.9670 ± 0.0019 | **+0.0253** |
 | **SigLIP2-L/16 384** | partial fine-tune | 0.9392 ± 0.0105 | 0.9706 ± 0.0016 | **+0.0314** |
-| **B_Gated** | SigLIP2-L + gated head | 0.9270 ± 0.0075 | 0.9689 ± 0.0009 | **+0.0418** |
+| **B_Gated (no LoRA)** | SigLIP2-L + gated head | 0.9270 ± 0.0075 | 0.9689 ± 0.0009 | **+0.0418** |
 | **MANIQA** | official recipe | 0.8830 ± 0.0171 | 0.9704 ± 0.0016 | **+0.0873** |
 | **TOPIQ** | full fine-tune | 0.8470 ± 0.0184 | 0.9528 ± 0.0032 | **+0.1058** |
 | **LIQE** | full fine-tune, CE | 0.8225 ± 0.0587 | 0.9183 ± 0.0021 | **+0.0958** |
 | **ARNIQA** | full fine-tune | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
 | **CLIP-IQA** | frozen CLIP + head | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
 
-All cells are five-seed means ± std (seeds 42–46).  B_Gated is a controlled
-reproduction without the paper's LoRA.
+All cells are five-seed means ± std (seeds 42–46).  **B_Gated + LoRA** follows
+the paper's recipe: rank-16 adapters on every `q/k/v/out` projection of the
+SigLIP2-L vision encoder (3.4 M trainable on a frozen 320 M backbone) plus the
+gated-activation head.  Adding the adapters lifts B_Gated from **0.9270** to
+**0.9424** on the content split (paired p = 0.029), i.e. into the same band as
+SigLIP2 and our model.  The no-LoRA row is retained to show what the earlier
+approximation measured.
 
 Per-seed values: [`multiseed.csv`](../results/split_bias/multiseed.csv);
 probe values: [`probe_maniqa.csv`](../results/split_bias/probe_maniqa.csv),
@@ -77,46 +83,64 @@ probe is retained.
 1. **The inflation is content leakage, not test difficulty.**  The zero-shot
    control is flat-to-negative; the fine-tuned/probe gap is +0.025 to +0.162
    on KADID.  Five-seed paired tests are significant for TOPIQ (p=0.0003),
-   ARNIQA (p=0.0019), CLIP-IQA (p=0.0005), LIQE (p=0.024), B_Gated (p=0.0003),
-   MANIQA (p=0.0003), SigLIP2 (p=0.0036) and ours (p=0.013).
+   ARNIQA (p=0.0019), CLIP-IQA (p=0.0005), LIQE (p=0.024), B_Gated no-LoRA
+   (p=0.0003), B_Gated+LoRA (p=0.0013), MANIQA (p=0.0003), SigLIP2 (p=0.0036)
+   and ours (p=0.013).
 2. **The effect is 3–5× larger than the hypothesised 0.02–0.04.**  Random
    image-level KADID numbers are not a mild optimistic bias; they are a
    different, much easier problem.
-3. **Our content-split result is statistically tied with the strongest
-   foundation probe.**
+3. **The content-split leaders are statistically tied with each other.**
    Under the content protocol the 93 M KonIQ model reaches **0.9416 ± 0.0137**
    on five single splits, and **0.9481 ± 0.0096** over five content folds.
-   SigLIP2-L/16 reaches **0.9392 ± 0.0105** — a **statistical tie** with ours
-   (paired p = 0.588).  B_Gated reaches **0.9270**, MANIQA **0.8830**, TOPIQ
-   **0.8470**, LIQE **0.8225**, ARNIQA **0.8210**, CLIP-IQA **0.7716**.
-   The random leaders (~0.97) are not comparable to the content numbers.
-4. **Our model is much less split-sensitive** (+0.025 vs +0.025 to +0.162).
-   KonIQ training and the foundation encoder reduce content memorisation, but
-   the residual gap shows leakage still helps.
-5. **The "third-best uncontrolled" framing was too pessimistic.**  The 0.9481
-   result is third in a table of mixed random-split numbers; under a controlled
-   content split it is the strongest result we can reproduce, and the published
-   random-split leaders lose 0.10–0.17 SROCC under the same protocol.
+   B_Gated+LoRA reaches **0.9424 ± 0.0088** and SigLIP2-L/16
+   **0.9392 ± 0.0105**.  The paired differences are all inside noise:
+   ours − B_Gated+LoRA = −0.0007 (p = 0.77), ours − SigLIP2 = +0.0024
+   (p = 0.59).  The remaining models are clearly lower: no-LoRA B_Gated
+   **0.9270**, MANIQA **0.8830**, TOPIQ **0.8470**, LIQE **0.8225**,
+   ARNIQA **0.8210**, CLIP-IQA **0.7716**.  The random leaders (~0.97) are not
+   comparable to the content numbers.
+4. **Our model has the smallest measured split gap** (+0.0253, vs +0.0307 for
+   B_Gated+LoRA and +0.0314 for SigLIP2), although for these three the
+   difference is small in absolute terms; the large gaps belong to the weaker
+   baselines (+0.09 to +0.16).  KonIQ training and the fused foundation encoder
+   reduce content memorisation, but the residual gap shows leakage still helps.
+5. **The honest headline is a controlled *efficiency* result, not a win.**
+   Three models sit at 0.939–0.942 on the content split: our 93 M model,
+   SigLIP2-L (317 M) and B_Gated+LoRA (320 M, 3.4 M trainable).  Ours matches
+   them with **3.4× fewer parameters** and needs no adapter surgery, but it is
+   **not** significantly better than either.  The mixed-protocol leaders lose
+   0.10–0.17 SROCC under the same protocol, so the published random-split
+   ranking does not survive a content-held-out audit.
 
 ## 4. Controlled comparison with foundation leaders
 
-| Model | Params | Content SROCC | Random SROCC |
-|---|---:|---:|---:|
-| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | **0.9481 (5-fold) / 0.9416 (5 seeds)** | 0.9670 |
-| SigLIP2-L/16 384 | 316.6 M | 0.9392 | 0.9706 |
-| B_Gated (reproduction) | 316.5 M | 0.9270 | 0.9689 |
-| MANIQA (official) | 135.7 M | 0.8830 | 0.9704 |
-| TOPIQ | 45.2 M | 0.8470 | 0.9528 |
-| LIQE | 151.3 M | 0.8225 | 0.9183 |
-| ARNIQA | 23.5 M | 0.8210 | 0.9545 |
-| CLIP-IQA | 102.3 M | 0.7716 | 0.9331 |
+| Model | Params | Content SROCC (5 seeds) | Content 5-fold CV | Random SROCC |
+|---|---:|---:|---:|---:|
+| B_Gated + LoRA | 319.7 M (3.4 M trainable) | **0.9424** | — | 0.9731 |
+| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | 0.9416 | **0.9481** | 0.9670 |
+| SigLIP2-L/16 384 | 316.6 M | 0.9392 | 0.9342 | 0.9706 |
+| B_Gated (no LoRA) | 316.5 M | 0.9270 | — | 0.9689 |
+| MANIQA (official) | 135.7 M | 0.8830 | — | 0.9704 |
+| TOPIQ | 45.2 M | 0.8470 | — | 0.9528 |
+| LIQE | 151.3 M | 0.8225 | — | 0.9183 |
+| ARNIQA | 23.5 M | 0.8210 | — | 0.9545 |
+| CLIP-IQA | 102.3 M | 0.7716 | — | 0.9331 |
 
-**Conclusion:** SigLIP2 is the strongest reproducible foundation probe, and our
-93 M model is **statistically tied** with it on the content split
-(0.9416 vs 0.9392, paired p = 0.588) while using 3.4× fewer parameters; the
-five-fold estimate is 0.9481.  B_Gated reaches 0.9270 without the paper's LoRA.
-The random leaders are all around 0.97 because of leakage.  This is a
-**controlled efficiency result**, not an absolute SOTA claim.
+The 5-fold column is a *different estimator* of the same content protocol: the
+16 test reference contents are rotated so every reference is tested once.  Our
+model and SigLIP2 are the only entries with the full five-fold run
+(**0.9481 ± 0.0096** vs **0.9342 ± 0.0118**), which is the like-for-like
+protocol requested for the foundation comparison.
+
+**Conclusion:** the content split produces a **three-way statistical tie** at
+the top — ours **0.9416**, B_Gated+LoRA **0.9424**, SigLIP2 **0.9392** — with
+paired p = 0.77 and 0.59 respectively.  Under five-fold content CV our 93 M
+model scores **0.9481** against SigLIP2's **0.9342** (+0.0139).  No model in
+this audit is significantly better than ours, and ours is not significantly
+better than the two foundation-scale models; we can only claim **parity at
+3.4× fewer parameters**.  The random leaders are all around 0.97 because of
+leakage.  This is a **controlled efficiency result**, not an absolute SOTA
+claim.
 
 ## 5. TID2013 cross-dataset replication
 
@@ -172,15 +196,17 @@ consistent with KADID.
   exact schedules; the comparison is about the split protocol, not a claim that
   our re-implementation equals their published numbers.
 * CLIP-IQA uses a frozen official feature head.  TOPIQ/ARNIQA use our common
-  recipe; LIQE uses native CE; MANIQA uses the official recipe.  B_Gated is a
-  controlled reproduction without the paper's LoRA.  MANIQA's TID content run
-  stopped at 15 epochs while random ran 20.  MANIQA KADID ran 20 epochs on both
-  splits.
+  recipe; LIQE uses native CE; MANIQA uses the official recipe.  B_Gated+LoRA
+  is our reproduction of the paper's adapter + gated-head recipe (the authors
+  have not released code); the no-LoRA row is kept as an ablation.  MANIQA's TID
+  content run stopped at 15 epochs while random ran 20.  MANIQA KADID ran 20
+  epochs on both splits.
 * The random split's validation set also leaks, so early stopping is part of the
   leaky protocol rather than an independent control.
 * Five-fold content CV (0.9481) is a stronger estimate than the five
   single-split content runs (0.9416); the random runs are single-split, so the
-  +0.025 row is a same-protocol comparison, not a five-fold estimate.
+  +0.025 row is a same-protocol comparison, not a five-fold estimate.  The same
+  holds for SigLIP2 (0.9342 five-fold vs 0.9392 five single splits).
 
 ## 7. Reproduce
 
@@ -211,6 +237,17 @@ PYTHONPATH=src .venv/bin/python -m nriqa.run \
 PYTHONPATH=src .venv/bin/python -m nriqa.run \
   --config configs/split_bias/liqe_ce.yaml \
   --name liqe_ce_content --output-dir runs_ce_full --device cuda:0
+
+# B_Gated + LoRA (paper recipe; needs the .venv2 transformers stack)
+PYTHONPATH=src .venv2/bin/python -m nriqa.run \
+  --config configs/split_bias/siglip2_gated_lora.yaml \
+  --name bgated_lora_content_s42 --output-dir runs_bgated_lora_s42 \
+  --device cuda:0 --set experiment.seed=42
+
+# five-fold content CV on the same folds as our model
+PYTHONPATH=src .venv2/bin/python -m nriqa.cv \
+  --config configs/siglip2_l16_384_kadid.yaml --k 5 \
+  --name siglip2_l16_384_cv65 --python .venv2/bin/python --device cuda:0
 ```
 
 Results: [`multiseed_summary.csv`](../results/split_bias/multiseed_summary.csv),

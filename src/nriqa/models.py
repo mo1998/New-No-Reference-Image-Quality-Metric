@@ -467,6 +467,8 @@ class TimmRegressor(nn.Module):
         distill_dim: int = 0,
         attention_pool: bool = False,
         head_type: str = "mlp",
+        lora_rank: int = 0,
+        lora_alpha: int = 32,
         **_,
     ):
         super().__init__()
@@ -588,6 +590,8 @@ class QStatFusion(nn.Module):
         distill_dim: int = 0,
         attention_pool: bool = False,
         head_type: str = "mlp",
+        lora_rank: int = 0,
+        lora_alpha: int = 32,
         **_,
     ):
         super().__init__()
@@ -658,6 +662,27 @@ class QStatFusion(nn.Module):
 # ---------------------------------------------------------------------------
 
 
+
+
+class LoRALinear(nn.Module):
+    """Low-rank adapter over a frozen linear layer."""
+
+    def __init__(self, base: nn.Linear, rank: int = 16, alpha: int = 32):
+        super().__init__()
+        self.base = base
+        for p in self.base.parameters():
+            p.requires_grad_(False)
+        self.rank = int(rank)
+        self.scale = float(alpha) / float(rank)
+        self.lora_A = nn.Linear(base.in_features, self.rank, bias=False)
+        self.lora_B = nn.Linear(self.rank, base.out_features, bias=False)
+        nn.init.kaiming_uniform_(self.lora_A.weight, a=5 ** 0.5)
+        nn.init.zeros_(self.lora_B.weight)
+
+    def forward(self, x):
+        return self.base(x) + self.scale * self.lora_B(self.lora_A(x))
+
+
 class GatedActivation(nn.Module):
     """Per-channel adaptive blend of Sigmoid and LeakyReLU (B_Gated)."""
 
@@ -697,6 +722,8 @@ class Siglip2Regressor(nn.Module):
         distill_dim: int = 0,
         attention_pool: bool = False,
         head_type: str = "mlp",
+        lora_rank: int = 0,
+        lora_alpha: int = 32,
         **_,
     ):
         super().__init__()
@@ -738,7 +765,21 @@ class Siglip2Regressor(nn.Module):
             self.dist_head = nn.Linear(head_in, num_distortions)
             self.level_head = nn.Linear(head_in, num_levels)
         self.freeze_blocks = int(freeze_blocks)
-        self._apply_freezing()
+        self.lora_rank = int(lora_rank)
+        if self.lora_rank > 0:
+            for layer in self.vision.encoder.layers:
+                attn = layer.self_attn
+                for name in ("q_proj", "k_proj", "v_proj", "out_proj"):
+                    setattr(attn, name, LoRALinear(getattr(attn, name), self.lora_rank, lora_alpha))
+            for p in self.vision.parameters():
+                p.requires_grad_(False)
+            for m in self.vision.modules():
+                if isinstance(m, LoRALinear):
+                    for p in (m.lora_A.parameters(), m.lora_B.parameters()):
+                        for q in p:
+                            q.requires_grad_(True)
+        else:
+            self._apply_freezing()
 
     def _apply_freezing(self) -> None:
         for p in self.vision.parameters():

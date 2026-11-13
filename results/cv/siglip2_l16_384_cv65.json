@@ -1,0 +1,73 @@
+{
+  "n_folds": 5,
+  "folds": [
+    {
+      "best_epoch": 10,
+      "test_srocc": 0.9208547380804663,
+      "test_plcc": 0.9261355097365691,
+      "tid_srocc": null,
+      "params": 316579359,
+      "summary": "runs_cv65_siglip2/20261113-185243_siglip2_l16_384_cv65_f0/summary.json"
+    },
+    {
+      "best_epoch": 8,
+      "test_srocc": 0.942883527744106,
+      "test_plcc": 0.9459477970114876,
+      "tid_srocc": null,
+      "params": 316579359,
+      "summary": "runs_cv65_siglip2/20261113-191602_siglip2_l16_384_cv65_f1/summary.json"
+    },
+    {
+      "best_epoch": 3,
+      "test_srocc": 0.9308366072123453,
+      "test_plcc": 0.9342747341175385,
+      "tid_srocc": null,
+      "params": 316579359,
+      "summary": "runs_cv65_siglip2/20261113-194234_siglip2_l16_384_cv65_f2/summary.json"
+    },
+    {
+      "best_epoch": 6,
+      "test_srocc": 0.9267182580111055,
+      "test_plcc": 0.9351081307482532,
+      "tid_srocc": null,
+      "params": 316579359,
+      "summary": "runs_cv65_siglip2/20261113-195609_siglip2_l16_384_cv65_f3/summary.json"
+    },
+    {
+      "best_epoch": 8,
+      "test_srocc": 0.9496582406624472,
+      "test_plcc": 0.9531058722752109,
+      "tid_srocc": null,
+      "params": 316579359,
+      "summary": "runs_cv65_siglip2/20261113-201247_siglip2_l16_384_cv65_f4/summary.json"
+    }
+  ],
+  "test": {
+    "mean": 0.934190274342094,
+    "std": 0.011829468240923575,
+    "min": 0.9208547380804663,
+    "max": 0.9496582406624472,
+    "values": [
+      0.920855,
+      0.942884,
+      0.930837,
+      0.926718,
+      0.949658
+    ]
+  },
+  "test_plcc": {
+    "mean": 0.9389144087778118,
+    "std": 0.010608732020620765,
+    "min": 0.9261355097365691,
+    "max": 0.9531058722752109,
+    "values": [
+      0.926136,
+      0.945948,
+      0.934275,
+      0.935108,
+      0.953106
+    ]
+  },
+  "name": "siglip2_l16_384_cv65",
+  "config": "configs/siglip2_l16_384_kadid.yaml"
+}

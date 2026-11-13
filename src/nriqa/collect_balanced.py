@@ -39,6 +39,12 @@ def main():
         for p in glob.glob(d + "/*/summary.json"):
             s = json.load(open(p)); split = "random" if "random" in s["experiment"] else "content"
             add(rows, "bgated", split, seed, s["test"]["srocc"], s["test"]["plcc"])
+    # B_Gated with the paper's LoRA adapters (rank 16 on q/k/v/out), seeds 42-46
+    for d in glob.glob("runs_bgated_lora_s[0-9][0-9]"):
+        seed = int(d[-2:])
+        for p in glob.glob(d + "/*/summary.json"):
+            s = json.load(open(p)); split = "random" if "random" in s["experiment"] else "content"
+            add(rows, "bgated_lora", split, seed, s["test"]["srocc"], s["test"]["plcc"])
     # SigLIP2 seed 42 + 43-46
     for p in glob.glob("runs_siglip2_split/*/summary.json"):
         s = json.load(open(p)); split = "random" if "random" in s["experiment"] else "content"

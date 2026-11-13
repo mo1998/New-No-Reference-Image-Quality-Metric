@@ -1,0 +1,30 @@
+include: ../siglip2_l16_384_kadid.yaml
+experiment:
+  name: siglip2_gated_lora
+data:
+  eval_datasets: [kadid10k]
+model:
+  kwargs:
+    model_name: google/siglip2-large-patch16-384
+    freeze_blocks: -1
+    head_hidden: 256
+    dropout: 0.2
+    aux_heads: false
+    head_type: gated
+    lora_rank: 16
+    lora_alpha: 32
+train:
+  epochs: 10
+  batch_size: 8
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+  warmup_epochs: 1
+  loss:
+    mse: 1.0
+    plcc: 0.2
+    rank: 0.0
+    aux_distortion: 0.0
+    aux_level: 0.0
+eval:
+  batch_size: 16
+  tta: true
