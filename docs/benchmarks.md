@@ -29,9 +29,9 @@ test-time labels.  TTA = horizontal-flip averaging.
 
 The **93 M B/16 + KonIQ** model is the headline: 0.9481 KADID, 0.7429 TID,
 10.9 ms and 390 MB.  It matches the 316 M L/16 teacher exactly (paired
-p = 0.992) with 3.4× fewer parameters and 27% lower latency, and it is the
-best controlled result among the models we re-ran; the raw mixed-protocol table
-has SigLIP2 and the gated foundation probe at 0.970.  KonIQ data scaling adds
+p = 0.992) with 3.4× fewer parameters and 27% lower latency, and it is
+statistically tied with SigLIP2-L on the content split (0.9416 vs 0.9392,
+p=0.588); the raw mixed-protocol table has the foundation probes at 0.97.  KonIQ data scaling adds
 +0.0088 KADID (p = 0.112) and +0.026 TID over the KADID-only B/16.  The 316 M
 L/16 remains a useful accuracy reference; the 94 M distillation variant
 (0.9421) is dominated by the KonIQ model.  The per-fold spread (B16+KonIQ:
@@ -149,9 +149,9 @@ CV.  Cross-dataset numbers are KADID→TID2013, zero-shot.
 zero-shot number.
 
 **Honest positioning.**  The **93 M B/16 trained on KADID + KonIQ** (0.9481
-KADID, 0.7429 TID) is the best controlled result among the models we re-ran:
-ahead of SigLIP2-L (0.9243), B_Gated (0.9160), MANIQA (0.8675), TOPIQ (0.8470), LIQE (0.8225),
-ARNIQA (0.8210) and CLIP-IQA (0.7716).  The random-split leaders at 0.97 are
+KADID, 0.7429 TID) is statistically tied with SigLIP2-L on the content split
+(0.9416 vs 0.9392, p=0.588) while using 3.4× fewer parameters; B_Gated 0.9270,
+MANIQA 0.8830, TOPIQ 0.8470, LIQE 0.8225, ARNIQA 0.8210, CLIP-IQA 0.7716.  The random-split leaders at 0.97 are
 inflated; this is not an absolute SOTA claim.  It
 matches the 316 M L/16 teacher exactly (p = 0.992) with **3.4× fewer
 parameters, 27% lower latency and ~3× lower memory**, and it is substantially
@@ -240,7 +240,7 @@ Random image-level KADID splits inflate the re-run NR-IQA methods by
 content-held-out split; a zero-shot control shows the random test subset is not
 easier.  Under the controlled content split the 93 M KonIQ model reaches
 **0.9416 ± 0.0137** over five single splits / **0.9481 ± 0.0096** five-fold,
-while the published methods reach SigLIP2 0.9243, B_Gated 0.9160, MANIQA 0.8675,
+while the published methods reach SigLIP2 0.9392, B_Gated 0.9270, MANIQA 0.8830,
 TOPIQ 0.8470, LIQE 0.8225, ARNIQA 0.8210 and CLIP-IQA 0.7716.
 TID2013 replication (2,400/240/360, 20/2/3 refs): random splits inflate the
 methods by +0.042 to +0.272 (MANIQA official 0.7819→0.9686), while our model

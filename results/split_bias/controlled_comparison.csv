@@ -1,9 +1,9 @@
-model,params_m,content_srocc,content_source,random_srocc,random_source,delta,note
-ours_b16_koniq,93.4,0.9416,5 seeds,0.967,5 seeds,0.0253,5-fold content 0.9481
-siglip2_l16,316.6,0.9243,single,0.9718,single,0.0475,strongest foundation probe
-bgated,316.5,0.916,single,0.9682,single,0.0522,"reproduction: SigLIP2-L + gated head, partial FT"
-maniqa_official,135.7,0.8675,20 epochs,0.9716,20 epochs,0.1041,official recipe
-topiq,45.2,0.847,5 seeds,0.9528,5 seeds,0.1058,p=0.0003
-liqe,151.3,0.8225,5 seeds,0.9183,5 seeds,0.0958,"native CE, p=0.024"
-arniqa,23.5,0.821,5 seeds,0.9545,5 seeds,0.1335,p=0.0019
-clipiqa,102.3,0.7716,5 seeds,0.9331,5 seeds,0.1615,p=0.0005
+model,params_m,content_srocc,content_std,random_srocc,random_std,delta,note
+ours_b16_koniq,93.4,0.9416,0.0137,0.967,0.0019,0.0253,5 seeds; 5-fold content 0.9481; vs SigLIP2 content p=0.588
+siglip2_l16,316.6,0.9392,0.0105,0.9706,0.0016,0.0314,5 seeds; statistically tied with ours on content
+bgated,316.5,0.927,0.0075,0.9689,0.0009,0.0418,5 seeds; reproduction without LoRA
+maniqa_official,135.7,0.883,0.0171,0.9704,0.0016,0.0873,5 seeds; official recipe
+topiq,45.2,0.847,0.0184,0.9528,0.0032,0.1058,5 seeds
+liqe,151.3,0.8225,0.0587,0.9183,0.0021,0.0958,5 seeds; native CE
+arniqa,23.5,0.821,0.0413,0.9545,0.003,0.1335,5 seeds
+clipiqa,102.3,0.7716,0.0353,0.9331,0.0029,0.1615,5 seeds; probe
