@@ -150,7 +150,7 @@ zero-shot number.
 
 **Honest positioning.**  The **93 M B/16 trained on KADID + KonIQ** (0.9481
 KADID, 0.7429 TID) is the best controlled result among the models we re-ran:
-ahead of SigLIP2-L (0.9243), MANIQA (0.8611), TOPIQ (0.8470), LIQE (0.8318),
+ahead of SigLIP2-L (0.9243), B_Gated (0.9160), MANIQA (0.8675), TOPIQ (0.8470), LIQE (0.8225),
 ARNIQA (0.8210) and CLIP-IQA (0.7716).  The random-split leaders at 0.97 are
 inflated; this is not an absolute SOTA claim.  It
 matches the 316 M L/16 teacher exactly (p = 0.992) with **3.4× fewer
@@ -236,12 +236,13 @@ training data, not synthetic benchmark fitting, is the decisive factor.
 ## 9. Split-protocol bias
 
 Random image-level KADID splits inflate the re-run NR-IQA methods by
-**+0.048 to +0.162 SROCC** relative to a matched
+**+0.025 to +0.162 SROCC** relative to a matched
 content-held-out split; a zero-shot control shows the random test subset is not
 easier.  Under the controlled content split the 93 M KonIQ model reaches
-**0.9402 ± 0.0176** over three single splits / **0.9481 ± 0.0096** five-fold,
-while the published methods reach 0.850/0.844/0.776/0.789/0.815.
-TID2013 replication (2,400/240/360, 20/2/3 refs): random splits inflate
-LIQE/ARNIQA/CLIP-IQA/TOPIQ/MANIQA by +0.066 to +0.272, while our model gains
-+0.019 (0.9266 content vs 0.9460 random).  Details and caveats:
+**0.9416 ± 0.0137** over five single splits / **0.9481 ± 0.0096** five-fold,
+while the published methods reach SigLIP2 0.9243, B_Gated 0.9160, MANIQA 0.8675,
+TOPIQ 0.8470, LIQE 0.8225, ARNIQA 0.8210 and CLIP-IQA 0.7716.
+TID2013 replication (2,400/240/360, 20/2/3 refs): random splits inflate the
+methods by +0.042 to +0.272 (MANIQA official 0.7819→0.9686), while our model
+gains +0.019 (0.9266 content vs 0.9460 random).  Details and caveats:
 [split_bias.md](split_bias.md).

@@ -466,6 +466,7 @@ class TimmRegressor(nn.Module):
         num_levels: int = 5,
         distill_dim: int = 0,
         attention_pool: bool = False,
+        head_type: str = "mlp",
         **_,
     ):
         super().__init__()
@@ -494,10 +495,11 @@ class TimmRegressor(nn.Module):
             # kept as well, so the head sees both global and saliency-weighted
             # evidence.  This costs <1 M parameters.
             self.pool_score = nn.Linear(self.feat_dim, 1)
+        act = GatedActivation(head_hidden) if head_type == "gated" else nn.GELU()
         self.head = nn.Sequential(
             nn.LayerNorm(head_in),
             nn.Linear(head_in, head_hidden),
-            nn.GELU(),
+            act,
             nn.Dropout(dropout),
             nn.Linear(head_hidden, 1),
         )
@@ -585,6 +587,7 @@ class QStatFusion(nn.Module):
         num_levels: int = 5,
         distill_dim: int = 0,
         attention_pool: bool = False,
+        head_type: str = "mlp",
         **_,
     ):
         super().__init__()
@@ -653,6 +656,26 @@ class QStatFusion(nn.Module):
 # ---------------------------------------------------------------------------
 # HuggingFace SigLIP2 vision encoder
 # ---------------------------------------------------------------------------
+
+
+class GatedActivation(nn.Module):
+    """Per-channel adaptive blend of Sigmoid and LeakyReLU (B_Gated)."""
+
+    def __init__(self, channels: int, leak: float = 0.25):
+        super().__init__()
+        self.alpha = nn.Parameter(torch.ones(channels))
+        self.beta = nn.Parameter(torch.zeros(channels))
+        self.gamma = nn.Parameter(torch.full((channels,), 2.0))
+        self.leak = nn.Parameter(torch.full((channels,), leak))
+        self.gate = nn.Parameter(torch.zeros(channels))
+
+    def forward(self, x):
+        w = torch.sigmoid(self.gate)
+        sig = self.gamma * torch.sigmoid(self.alpha * x + self.beta)
+        lrelu = torch.where(x >= 0, x, self.leak * x)
+        return w * sig + (1.0 - w) * lrelu
+
+
 class Siglip2Regressor(nn.Module):
     """SigLIP2 vision encoder with a small quality head.
 
@@ -673,6 +696,7 @@ class Siglip2Regressor(nn.Module):
         num_levels: int = 5,
         distill_dim: int = 0,
         attention_pool: bool = False,
+        head_type: str = "mlp",
         **_,
     ):
         super().__init__()
@@ -696,10 +720,11 @@ class Siglip2Regressor(nn.Module):
             # kept as well, so the head sees both global and saliency-weighted
             # evidence.  This costs <1 M parameters.
             self.pool_score = nn.Linear(self.feat_dim, 1)
+        act = GatedActivation(head_hidden) if head_type == "gated" else nn.GELU()
         self.head = nn.Sequential(
             nn.LayerNorm(head_in),
             nn.Linear(head_in, head_hidden),
-            nn.GELU(),
+            act,
             nn.Dropout(dropout),
             nn.Linear(head_hidden, 1),
         )

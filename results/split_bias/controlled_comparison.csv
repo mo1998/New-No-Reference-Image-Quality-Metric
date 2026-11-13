@@ -1,8 +1,9 @@
 model,params_m,content_srocc,content_source,random_srocc,random_source,delta,note
-ours_b16_koniq,93.4,0.9481,5-fold CV,0.966,3 seeds,0.0179,best controlled
-siglip2_l16,316.6,0.9243,single split,0.9718,single split,0.0475,strongest reproducible foundation probe
-maniqa_official,135.7,0.8611,9 epochs,0.9716,20 epochs,0.1105,official recipe; unequal epochs
+ours_b16_koniq,93.4,0.9416,5 seeds,0.967,5 seeds,0.0253,5-fold content 0.9481
+siglip2_l16,316.6,0.9243,single,0.9718,single,0.0475,strongest foundation probe
+bgated,316.5,0.916,single,0.9682,single,0.0522,"reproduction: SigLIP2-L + gated head, partial FT"
+maniqa_official,135.7,0.8675,20 epochs,0.9716,20 epochs,0.1041,official recipe
 topiq,45.2,0.847,5 seeds,0.9528,5 seeds,0.1058,p=0.0003
-liqe,151.3,0.8318,single split,0.9184,single split,0.0866,native CE full fine-tune
+liqe,151.3,0.8225,5 seeds,0.9183,5 seeds,0.0958,"native CE, p=0.024"
 arniqa,23.5,0.821,5 seeds,0.9545,5 seeds,0.1335,p=0.0019
 clipiqa,102.3,0.7716,5 seeds,0.9331,5 seeds,0.1615,p=0.0005

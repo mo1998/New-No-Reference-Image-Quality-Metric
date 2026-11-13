@@ -52,10 +52,11 @@ A complete, reproducible NR-IQA research framework:
 
 **Honest positioning:** this is a **controlled benchmark audit plus a
 lightweight model**, not an absolute state of the art.  Under the content-held-out
-protocol the 93 M model reaches **0.9481**, ahead of SigLIP2-L (0.9243), MANIQA
-(0.8611), TOPIQ (0.8470), LIQE (0.8318), ARNIQA (0.8210) and CLIP-IQA (0.7716).
-The random-split numbers near 0.97 are inflated by content leakage; B_Gated could
-not be reproduced.  See `docs/final_report.md` §4.10 for the controlled
+protocol the 93 M model reaches **0.9481**, ahead of SigLIP2-L (0.9243),
+B_Gated (0.9160), MANIQA (0.8675), TOPIQ (0.8470), LIQE (0.8225), ARNIQA
+(0.8210) and CLIP-IQA (0.7716).
+The random-split numbers near 0.97 are inflated by content leakage; B_Gated is a
+controlled reproduction without the paper's LoRA.  See `docs/final_report.md` §4.10 for the controlled
 comparison.
 
 **Statistically significant findings** (paired content-level bootstrap):
@@ -79,27 +80,29 @@ probe:
 | Model | Content split SROCC | Random split SROCC | Δ |
 |---|---:|---:|---:|
 | SigLIP2-L/16 384 (316 M) | 0.9243 | 0.9718 | **+0.0475** |
-| MANIQA (official recipe) | 0.8611 | 0.9716 | **+0.1105** |
+| B_Gated reproduction (316 M) | 0.9160 | 0.9682 | **+0.0522** |
+| MANIQA official (136 M) | 0.8675 | 0.9716 | **+0.1041** |
 | TOPIQ | 0.8470 ± 0.0184 | 0.9528 ± 0.0032 | **+0.1058** |
-| LIQE (full CE) | 0.8318 | 0.9184 | **+0.0866** |
+| LIQE (full CE) | 0.8225 ± 0.0587 | 0.9183 ± 0.0021 | **+0.0958** |
 | ARNIQA | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
 | CLIP-IQA (probe) | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
-| **Ours, SigLIP-B/16 + KonIQ (93 M)** | **0.9481 (5-fold)** | 0.9660 | **+0.0179** |
+| **Ours, SigLIP-B/16 + KonIQ (93 M)** | **0.9416 ± 0.0137 / 0.9481 (5-fold)** | 0.9670 | **+0.0253** |
 
-Five-seed paired tests: TOPIQ p=0.0003, ARNIQA p=0.0019, CLIP-IQA p=0.0005.
-Under the controlled content split, our 93 M model is the strongest result;
-SigLIP2-L's random 0.9718 and MANIQA's 0.9716 are inflated by content leakage.
-B_Gated was not reproducible in this environment.
+Five-seed paired tests: TOPIQ p=0.0003, ARNIQA p=0.0019, CLIP-IQA p=0.0005,
+LIQE p=0.024, ours p=0.013.  Under the controlled content split, our 93 M model
+is the strongest result; SigLIP2-L, B_Gated and MANIQA random scores near 0.97
+are inflated by content leakage.  B_Gated is a controlled reproduction without
+the paper's LoRA.
 
 A zero-shot control on the same test subsets shows random is *not* easier
 (TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383, ARNIQA 0.737→0.699, LIQE flat), so
 this is content leakage, not test composition.  Under the controlled content
-protocol our 93 M model (0.9402 ± 0.0176 over three splits, **0.9481 ± 0.0096**
+protocol our 93 M model (0.9416 ± 0.0137 over five splits, **0.9481 ± 0.0096**
 over five folds) is the best controlled result; the random-split numbers near
 0.95 are not comparable.
 TID2013 replication (2,400/240/360, 20/2/3 refs): ours 0.9266→0.9460
 (+0.019), TOPIQ 0.8650→0.9330, CLIP-IQA 0.8162→0.9027, ARNIQA
-0.6490→0.9211, MANIQA probe 0.9021→0.9679, LIQE full CE 0.8215→0.8633.
+0.6490→0.9211, MANIQA official 0.7819→0.9686, LIQE full CE 0.8215→0.8633.
 Full protocol, caveats and reproduction: [split-protocol audit](docs/split_bias.md).
 
 ## Authentic-distortion results (zero-shot)
