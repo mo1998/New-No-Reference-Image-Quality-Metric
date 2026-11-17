@@ -78,6 +78,23 @@ def test_aux_loss_label_shift():
     assert "aux_dist" in parts and "aux_level" in parts
 
 
+def test_frozen_mobilenet_large_mlp_head():
+    """The literal M1 MVP is a frozen backbone with a trainable two-layer head."""
+    from nriqa.models import build_model
+
+    cfg = load_config("configs/mobilenetv3_large_frozen_kadid.yaml")
+    cfg["model"]["pretrained"] = False
+    model = build_model(cfg)
+    assert model.head == "mlp"
+    trainable = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
+    assert trainable
+    assert all(name.startswith("backbone.classifier.") for name, _ in trainable)
+    n_trainable = sum(p.numel() for _, p in trainable)
+    # 960 -> 256 -> 1 MLP: roughly a quarter of a million weights.
+    assert 200_000 < n_trainable < 300_000
+
+
+
 def test_split_no_leak_and_sizes():
     from nriqa.data import split_dataframe
     import pandas as pd

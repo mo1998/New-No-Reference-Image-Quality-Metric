@@ -380,47 +380,77 @@ class WaveQNet(nn.Module):
 # Pretrained compact backbones
 # ---------------------------------------------------------------------------
 class PretrainedBackbone(nn.Module):
-    """Wrap a torchvision classifier as a scalar quality regressor."""
+    """Wrap a torchvision classifier as a scalar quality regressor.
+
+    ``head="linear"`` keeps the original single-layer regression head used by
+    the M2 compact baselines.  ``head="mlp"`` replaces the classifier with the
+    two-layer MLP specified in the M1 proposal; the backbone can be frozen so
+    only that head is trained.
+    """
 
     def __init__(self, name: str = "mobilenet_v3_small", pretrained: bool = True,
-                 freeze: bool = False, dropout: float = 0.1, **_):
+                 freeze: bool = False, dropout: float = 0.1,
+                 head: str = "linear", head_hidden: int = 256, **_):
         super().__init__()
         from torchvision import models
 
+        head = str(head).lower()
+        if head not in ("linear", "mlp"):
+            raise ValueError(f"Unsupported head {head!r}; choose 'linear' or 'mlp'")
+
         name = name.lower()
         weights = "DEFAULT" if pretrained else None
+
+        def mlp_head(in_dim: int, activation: nn.Module) -> nn.Sequential:
+            return nn.Sequential(
+                nn.Linear(in_dim, head_hidden),
+                activation,
+                nn.Dropout(dropout),
+                nn.Linear(head_hidden, 1),
+            )
+
         if name in ("mobilenet_v3_small", "mobilenetv3_small"):
             m = models.mobilenet_v3_small(weights=weights)
-            in_dim = m.classifier[-1].in_features
-            m.classifier[-1] = nn.Linear(in_dim, 1)
+            in_dim = m.classifier[0].in_features
+            if head == "mlp":
+                m.classifier = mlp_head(in_dim, nn.Hardswish(inplace=True))
+            else:
+                m.classifier[-1] = nn.Linear(m.classifier[-1].in_features, 1)
             self.backbone = m
             self.feature_dim = in_dim
         elif name in ("mobilenet_v3_large",):
             m = models.mobilenet_v3_large(weights=weights)
-            in_dim = m.classifier[-1].in_features
-            m.classifier[-1] = nn.Linear(in_dim, 1)
+            in_dim = m.classifier[0].in_features
+            if head == "mlp":
+                m.classifier = mlp_head(in_dim, nn.Hardswish(inplace=True))
+            else:
+                m.classifier[-1] = nn.Linear(m.classifier[-1].in_features, 1)
             self.backbone = m
             self.feature_dim = in_dim
         elif name in ("resnet18",):
             m = models.resnet18(weights=weights)
             in_dim = m.fc.in_features
-            m.fc = nn.Linear(in_dim, 1)
+            m.fc = mlp_head(in_dim, nn.ReLU(inplace=True)) if head == "mlp" else nn.Linear(in_dim, 1)
             self.backbone = m
             self.feature_dim = in_dim
         elif name in ("resnet50",):
             m = models.resnet50(weights=weights)
             in_dim = m.fc.in_features
-            m.fc = nn.Linear(in_dim, 1)
+            m.fc = mlp_head(in_dim, nn.ReLU(inplace=True)) if head == "mlp" else nn.Linear(in_dim, 1)
             self.backbone = m
             self.feature_dim = in_dim
         elif name in ("efficientnet_b0",):
             m = models.efficientnet_b0(weights=weights)
             in_dim = m.classifier[-1].in_features
-            m.classifier[-1] = nn.Linear(in_dim, 1)
+            if head == "mlp":
+                m.classifier[-1] = mlp_head(in_dim, nn.SiLU(inplace=True))
+            else:
+                m.classifier[-1] = nn.Linear(in_dim, 1)
             self.backbone = m
             self.feature_dim = in_dim
         else:
             raise ValueError(f"Unsupported pretrained backbone: {name}")
+        self.head = head
         self.freeze = freeze
         if freeze:
             for p in self.backbone.parameters():
