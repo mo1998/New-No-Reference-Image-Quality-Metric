@@ -1,0 +1,73 @@
+{
+  "n_folds": 5,
+  "folds": [
+    {
+      "best_epoch": 4,
+      "test_srocc": 0.7935360968660851,
+      "test_plcc": 0.8037057094109443,
+      "tid_srocc": null,
+      "params": 151277313,
+      "summary": "runs_cv65_split_bias/20261117-215737_liqe_cv65_f0/summary.json"
+    },
+    {
+      "best_epoch": 3,
+      "test_srocc": 0.794397131824228,
+      "test_plcc": 0.8117619017038977,
+      "tid_srocc": null,
+      "params": 151277313,
+      "summary": "runs_cv65_split_bias/20261117-220126_liqe_cv65_f1/summary.json"
+    },
+    {
+      "best_epoch": 4,
+      "test_srocc": 0.7757740853796694,
+      "test_plcc": 0.7749738275917343,
+      "tid_srocc": null,
+      "params": 151277313,
+      "summary": "runs_cv65_split_bias/20261117-220554_liqe_cv65_f2/summary.json"
+    },
+    {
+      "best_epoch": 1,
+      "test_srocc": 0.8193701037910587,
+      "test_plcc": 0.8352735788199136,
+      "tid_srocc": null,
+      "params": 151277313,
+      "summary": "runs_cv65_split_bias/20261117-220953_liqe_cv65_f3/summary.json"
+    },
+    {
+      "best_epoch": 4,
+      "test_srocc": 0.8609474359305309,
+      "test_plcc": 0.8677284829030321,
+      "tid_srocc": null,
+      "params": 151277313,
+      "summary": "runs_cv65_split_bias/20261117-221405_liqe_cv65_f4/summary.json"
+    }
+  ],
+  "test": {
+    "mean": 0.8088049707583144,
+    "std": 0.033023561406289745,
+    "min": 0.7757740853796694,
+    "max": 0.8609474359305309,
+    "values": [
+      0.793536,
+      0.794397,
+      0.775774,
+      0.81937,
+      0.860947
+    ]
+  },
+  "test_plcc": {
+    "mean": 0.8186887000859044,
+    "std": 0.03486910926574302,
+    "min": 0.7749738275917343,
+    "max": 0.8677284829030321,
+    "values": [
+      0.803706,
+      0.811762,
+      0.774974,
+      0.835274,
+      0.867728
+    ]
+  },
+  "name": "liqe_cv65",
+  "config": "configs/split_bias/liqe_ce.yaml"
+}
