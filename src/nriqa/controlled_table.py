@@ -12,12 +12,30 @@ third-party packages that do not expose a stable parameter-count helper.
 
 from __future__ import annotations
 
+import json
+import os
+
 import pandas as pd
 from scipy import stats
 
 STATS = "results/split_bias/balanced_stats.csv"
 SEEDS = "results/split_bias/balanced_multiseed.csv"
 OUT = "results/split_bias/controlled_comparison.csv"
+
+# Five-fold content CV artefacts (written by ``nriqa.cv``).  Models without an
+# entry were not run five-fold; the column is left empty rather than filled
+# with the five-seed estimate, which is a different estimator.
+CV_FILES = {
+    "ours": "results/cv/siglip_b16_384_koniq_cv65.json",
+    "siglip2": "results/cv/siglip2_l16_384_cv65.json",
+    "bgated_lora": "results/cv/bgated_lora_cv65.json",
+    "bgated": "results/cv/bgated_cv65.json",
+    "maniqa_official": "results/cv/maniqa_cv65.json",
+    "topiq": "results/cv/topiq_cv65.json",
+    "liqe": "results/cv/liqe_cv65.json",
+    "arniqa": "results/cv/arniqa_cv65.json",
+    "clipiqa": "results/cv/clipiqa_cv65.json",
+}
 
 # params_m: total backbone+head parameters in millions (from the run log).
 # trainable_m: parameters updated during training (LoRA adapters count as
@@ -82,6 +100,16 @@ REGISTRY = {
 ALIASES = {"maniqa": "maniqa_official"}
 
 
+def load_cv(model):
+    path = CV_FILES.get(model)
+    if not path or not os.path.exists(path):
+        return None, None, None
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    test = data.get("test") or {}
+    return test.get("mean"), test.get("std"), test.get("values")
+
+
 def main():
     stats_df = pd.read_csv(STATS)
     seeds = pd.read_csv(SEEDS)
@@ -97,6 +125,7 @@ def main():
         p_vs_ours = float("nan")
         if len(paired) >= 2 and r.model != "ours":
             p_vs_ours = stats.ttest_rel(ours.loc[paired], content.loc[paired]).pvalue
+        cv_mean, cv_std, cv_folds = load_cv(key)
         rows.append({
             "model": key,
             "label": meta["label"],
@@ -109,6 +138,9 @@ def main():
             "delta": r.delta_mean,
             "p_content_vs_random": r.p_value,
             "p_content_vs_ours": p_vs_ours,
+            "content_cv_srocc": cv_mean,
+            "content_cv_std": cv_std,
+            "content_cv_folds": cv_folds,
             "note": meta["note"],
         })
     df = pd.DataFrame(rows).sort_values("content_srocc", ascending=False)

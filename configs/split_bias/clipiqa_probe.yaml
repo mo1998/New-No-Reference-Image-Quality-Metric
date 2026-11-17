@@ -1,0 +1,15 @@
+include: base_pyiqa.yaml
+experiment:
+  name: clipiqa_probe
+model:
+  name: clipiqa_probe
+  kwargs:
+    metric_name: maniqa
+train:
+  epochs: 10
+  batch_size: 32
+  lr: 1.0e-3
+  amp: true
+  label_norm: zscore
+eval:
+  batch_size: 32
