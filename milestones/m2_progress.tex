@@ -8,27 +8,65 @@
 \usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{amsmath,amssymb}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage[round]{natbib}
 \usepackage{hyperref}
-\hypersetup{colorlinks=true, linkcolor=blue!50!black, citecolor=blue!50!black, urlcolor=blue!50!black}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black,
+  pdftitle={Milestone 2 Progress Report: Building and Validating a Lightweight No-Reference Image-Quality Metric},
+  pdfauthor={Novert Ahmed Fahim Abdelfattah, Farah Hossam Eldin Mahmoud, Mohamed Ahmed Fathy Abdelrazik}
+}
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{caption}
 \usepackage{array}
 \usepackage{needspace}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\captionsetup{font=small,labelfont=bf,skip=6pt}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{2.2ex plus .4ex minus .2ex}{1ex}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{1.6ex plus .3ex minus .2ex}{0.6ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize CSE681 --- Project 28}
+\fancyhead[R]{\footnotesize Milestone 2 --- Progress Report}
+\fancyfoot[C]{\footnotesize \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\footnotesize \thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+}
 
 \setlength{\emergencystretch}{2em}
+\renewcommand{\bibsection}{\section*{References}}
+\renewcommand{\bibfont}{\footnotesize}
+\setlength{\bibsep}{2pt plus 1pt}
 
 \graphicspath{{figures/}}
 
 \title{\LARGE Progress Report \\[4pt]
 \large Building and Validating a Lightweight No-Reference Image-Quality Metric}
 \author{
-  Novert Ahmed Fahim Abdelfattah - 2501922 \and
-  Farah Hossam Eldin Mahmoud - 2501897 \and
+  Novert Ahmed Fahim Abdelfattah - 2501922 \\
+  Farah Hossam Eldin Mahmoud - 2501897 \\
   Mohamed Ahmed Fathy Abdelrazik - 2400008
 }
 \date{Milestone 2 --- 17/11/2026 \\{} CSE681 --- Advanced Digital Image Processing}
@@ -86,14 +124,16 @@ Table~\ref{tab:baseline} reruns the M1 baseline on the 2,000-image test split, w
 out 16 reference contents. LPIPS is a distance, so its raw correlation with DMOS is
 negative. The table reports the magnitude, and the caption gives the sign convention. The
 numbers match what the M1 pipeline produced, which tells us that the data pipeline, the
-content split and the metric code are working as intended.
+content split and the metric code are working as intended. Figure~\ref{fig:baselines}
+shows the same correlations image by image.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{M1 full-reference baselines on the content-held-out KADID-10k test split
 (2,000 images). LPIPS is oriented so that higher is better; its raw SROCC is
 $-0.808$.}
 \label{tab:baseline}
+\small
 \begin{tabular}{@{}lccc@{}}
 \toprule
 \textbf{Metric} & \textbf{SROCC} & \textbf{PLCC} & \textbf{RMSE} \\
@@ -104,6 +144,16 @@ LPIPS & 0.808 & 0.807 & 0.639 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{fig_m1_baselines.pdf}
+\caption{M1 full-reference baselines on the 2,000-image KADID-10k test split. Each point
+is one distorted image and the title gives the Spearman correlation with DMOS. LPIPS is
+plotted as a distance, so its raw correlation is negative; Table~\ref{tab:baseline}
+orients it.}
+\label{fig:baselines}
+\end{figure}
 
 We also retrained published NR-IQA methods on matched splits. The best reproduction is
 the B\_Gated+LoRA adapter recipe at 0.9424 content-held-out SROCC. MANIQA
@@ -148,9 +198,9 @@ for quick iteration. Their capacities differ a lot, so the table is a diagnostic
 larger model is not automatically the better engineering choice. The five-fold result
 appears separately in Table~\ref{tab:cv}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
-\small
+\footnotesize
 \caption{Single content split (57 train / 8 validation / 16 test references). TID2013 is
 zero-shot for KADID-only models. QStatFusion and the compact models use this split; the
 best five-fold result is in Table~\ref{tab:cv}.}
@@ -170,35 +220,7 @@ QStatFusion 224                & 93.8 M  & 0.889 & 0.897 & \textbf{0.753} \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\linewidth]{fig_m1_baselines.pdf}
-\caption{M1 full-reference baselines on the 2,000-image KADID-10k test split. Each point
-is one distorted image and the title gives the Spearman correlation with DMOS. LPIPS is
-plotted as a distance, so its raw correlation is negative; Table~\ref{tab:baseline}
-orients it.}
-\label{fig:baselines}
-\end{figure}
-
-\begin{table}[htbp]
-\centering
-\small
-\caption{Five-fold content cross-validation on KADID-10k. Each fold holds out 16 reference
-contents. TID2013 is evaluated zero-shot from the KADID-trained checkpoint.}
-\label{tab:cv}
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
-\textbf{Method} & \textbf{Params} & \textbf{KADID SROCC} & \textbf{KADID PLCC} & \textbf{TID2013 SROCC} \\
-\midrule
-SigLIP-B/16 384, KADID + KonIQ & 93.4 M  & \textbf{0.9481 $\pm$ 0.0096} & \textbf{0.9524} & \textbf{0.7429 $\pm$ 0.0113} \\
-SigLIP-L/16 384 + aux/rank/TTA & 316.6 M & 0.9481 $\pm$ 0.0074 & 0.9526 & 0.7232 $\pm$ 0.0205 \\
-SigLIP-B/16 384 + aux/rank/TTA & 93.4 M  & 0.9393 $\pm$ 0.0149 & 0.9441 & 0.7166 $\pm$ 0.0123 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.92\linewidth]{fig_model_comparison.pdf}
 \caption{Single-split comparison of the implemented models. The from-scratch models
@@ -215,7 +237,7 @@ model from 0.9416 to 0.9670, and MANIQA from 0.8830 to 0.9704. Under the content
 the top three methods are statistically tied. The fair reading is that a 93.4 M model
 matches much larger foundation probes; we do not claim to beat them.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.92\linewidth]{fig_split_audit.pdf}
 \caption{Random versus content-held-out KADID-10k SROCC, with every method retrained under
@@ -230,7 +252,7 @@ are handled well. Hue shift (0.476), sparse sampling (0.496), multiplicative noi
 and quantisation (0.557) are much weaker. Those failures explain the colour-aware and
 frequency-aware work planned for M3.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.92\linewidth]{fig_per_distortion.pdf}
 \caption{Within-distortion SROCC for the 384 px single-split model. The dashed line marks
@@ -238,6 +260,24 @@ the mean over families (0.814). Hue shift and sparse sampling remain the cleares
 failures.}
 \label{fig:distortion}
 \end{figure}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Five-fold content cross-validation on KADID-10k. Each fold holds out 16 reference
+contents. TID2013 is evaluated zero-shot from the KADID-trained checkpoint.}
+\label{tab:cv}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Method} & \textbf{Params} & \textbf{KADID SROCC} & \textbf{KADID PLCC} & \textbf{TID2013 SROCC} \\
+\midrule
+SigLIP-B/16 384, KADID + KonIQ & 93.4 M  & \textbf{0.9481 $\pm$ 0.0096} & \textbf{0.9524} & \textbf{0.7429 $\pm$ 0.0113} \\
+SigLIP-L/16 384 + aux/rank/TTA & 316.6 M & 0.9481 $\pm$ 0.0074 & 0.9526 & 0.7232 $\pm$ 0.0205 \\
+SigLIP-B/16 384 + aux/rank/TTA & 93.4 M  & 0.9393 $\pm$ 0.0149 & 0.9441 & 0.7166 $\pm$ 0.0123 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Challenges \& Deviations from the M1 Plan}
 \label{sec:challenges}
@@ -282,7 +322,7 @@ not the configuration we ran, and Section~\ref{sec:challenges} explains why. We 
 the MVP as \emph{met in all but one respect, with a documented backbone substitution}; the
 literal M1 recipe has not been executed.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
 \caption{Updated milestone allocation. The M2 column lists what was completed; the M3
