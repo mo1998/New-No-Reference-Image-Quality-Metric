@@ -361,6 +361,9 @@ TID content error bars are wide because only three references are held out.
 | ARNIQA | 23.5 M | 0.8210 | — | 0.9545 | 5 seeds |
 | CLIP-IQA | 102.3 M | 0.7716 | — | 0.9331 | 5 seeds, probe |
 
+An em dash in the 5-fold column means **not run**: a five-fold estimate costs
+five extra trainings per model, and only ours and SigLIP2 were run that way.
+
 Under the controlled content protocol the top three are **statistically tied**:
 ours 0.9416, B_Gated+LoRA 0.9424 (p=0.772) and SigLIP2-L 0.9392 (p=0.588),
 while our model uses 3.4× fewer parameters (**93.4 M vs 320 M**).  On the

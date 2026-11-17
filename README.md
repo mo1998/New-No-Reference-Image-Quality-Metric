@@ -92,6 +92,9 @@ probe:
 | ARNIQA | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
 | CLIP-IQA (probe) | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
 
+Five-fold CV was run only for ours and SigLIP2; the other models were evaluated
+with five seeds on the single content split, not five folds.
+
 All models have five seeds. Paired tests: TOPIQ p=0.0003, ARNIQA
 p=0.0019, CLIP-IQA p=0.0005, LIQE p=0.024, B_Gated no-LoRA p=0.0003,
 B_Gated+LoRA p=0.0013, MANIQA p=0.0003, SigLIP2 p=0.0036, ours p=0.013.

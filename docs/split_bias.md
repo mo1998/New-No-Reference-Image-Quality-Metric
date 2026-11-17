@@ -127,7 +127,9 @@ probe is retained.
 | CLIP-IQA | 102.3 M | 0.7716 | — | 0.9331 |
 
 The 5-fold column is a *different estimator* of the same content protocol: the
-16 test reference contents are rotated so every reference is tested once.  Our
+16 test reference contents are rotated so every reference is tested once.  An
+em dash means **not run**, not zero — a five-fold estimate needs five extra
+trainings per model, and was produced only for the two entries above.  Our
 model and SigLIP2 are the only entries with the full five-fold run
 (**0.9481 ± 0.0096** vs **0.9342 ± 0.0118**), which is the like-for-like
 protocol requested for the foundation comparison.
