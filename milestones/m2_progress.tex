@@ -83,8 +83,10 @@ and foundation-encoder models. Our best model so far is a partially fine-tuned
 SigLIP-B/16 at 384 px, using distortion and level auxiliary heads, a ranking loss, flip
 TTA and KonIQ-10k as extra data. It reaches \textbf{0.9481 $\pm$ 0.0096 SROCC} over five
 content folds and \textbf{0.7429 $\pm$ 0.0113} zero-shot on TID2013 with 93.4 M
-parameters. The M1 minimum-viable deliverable is essentially met, although we had to
-substitute the backbone (Section~\ref{sec:challenges}).
+parameters. The M1 minimum-viable deliverable is now met in its literal form as well: the
+frozen MobileNetV3-Large with a two-layer MLP reaches \textbf{0.569 SROCC} and
+\textbf{0.595 PLCC} on the same split, and the foundation model above is an extension
+beyond it.
 \end{abstract}
 
 \section{Recap}
@@ -184,26 +186,29 @@ KonIQ-10k, with the KADID distortion and level labels masked for KonIQ batches.
 QStatFusion (94 M) gates SigLIP features against the MSOSNet statistical token, mainly to
 improve cross-dataset robustness.
 
-M1 proposed a frozen MobileNetV3-Large with a small MLP head. We implemented MobileNetV3
-and the light-head pattern, but the compact model actually trained for M2 is
-MobileNetV3-Small with full fine-tuning (0.721 SROCC). The foundation models go beyond the
-M1 plan. We treat this as a deviation rather than presenting it as the original design;
-Section~\ref{sec:challenges} gives the reasoning.
+M1 proposed a frozen MobileNetV3-Large with a two-layer MLP head. We ran that exact
+configuration on the same split: 3.22 M parameters in total, 246 k trainable, 0.569 SROCC
+and 0.595 PLCC. It sits below the fully fine-tuned MobileNetV3-Small (0.721) and far below
+the foundation encoders, which is the empirical reason the main line moved to SigLIP. The
+foundation models are an extension beyond the M1 plan, not a substitute for a missing
+result; Section~\ref{sec:challenges} gives the rest of the reasoning.
 
 \section{Preliminary Results}
 \label{sec:results}
 
 Table~\ref{tab:models} compares the implemented models on the single content split we used
 for quick iteration. Their capacities differ a lot, so the table is a diagnostic, and a
-larger model is not automatically the better engineering choice. The five-fold result
-appears separately in Table~\ref{tab:cv}.
+larger model is not automatically the better engineering choice. The row marked M1 MVP is
+the literal frozen MobileNetV3-Large + MLP; at 0.569 SROCC it is clearly weaker than the
+fine-tuned compact models. The five-fold result appears separately in
+Table~\ref{tab:cv}.
 
 \begin{table}[H]
 \centering
 \footnotesize
 \caption{Single content split (57 train / 8 validation / 16 test references). TID2013 is
-zero-shot for KADID-only models. QStatFusion and the compact models use this split; the
-best five-fold result is in Table~\ref{tab:cv}.}
+zero-shot for KADID-only models; ``--'' means not evaluated. QStatFusion and the compact
+models use this split; the best five-fold result is in Table~\ref{tab:cv}.}
 \label{tab:models}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lrrrr@{}}
@@ -212,6 +217,7 @@ best five-fold result is in Table~\ref{tab:cv}.}
 \midrule
 WaveQNet (from scratch)        & 0.08 M  & 0.496 & 0.547 & 0.234 \\
 MSOSNet (from scratch)         & 0.30 M  & 0.721 & 0.730 & 0.483 \\
+MobileNetV3-Large frozen + MLP (M1 MVP) & 3.22 M & 0.569 & 0.595 & -- \\
 MobileNetV3-Small (fine-tuned) & 1.52 M  & 0.721 & 0.732 & 0.632 \\
 ResNet-18 (fine-tuned)         & 11.2 M  & 0.769 & 0.779 & 0.678 \\
 SigLIP-B/16 224 + aux/rank/TTA & 93.1 M  & 0.897 & 0.907 & 0.726 \\
@@ -282,14 +288,13 @@ SigLIP-B/16 384 + aux/rank/TTA & 93.4 M  & 0.9393 $\pm$ 0.0149 & 0.9441 & 0.7166
 \section{Challenges \& Deviations from the M1 Plan}
 \label{sec:challenges}
 
-\textbf{The backbone changed.} M1 specified a frozen MobileNetV3-Large with an MLP head.
-We trained a fully fine-tuned MobileNetV3-Small instead, and the main line later moved to
-a partially fine-tuned SigLIP-B/16. The reason is simple: compact and from-scratch models
-stop around 0.72 SROCC with 57--64 training contents, while frozen foundation features
-carry much more quality information. We kept the low-parameter, light-head idea and
-changed the encoder. The code can build MobileNetV3-Large and has a \texttt{freeze}
-switch, so the exact M1 MVP is a short run. We would rather list it as pending than report
-a number we did not produce.
+\textbf{The backbone changed.} M1 specified a frozen MobileNetV3-Large with an MLP head,
+and we ran it: 0.569 SROCC and 0.595 PLCC, below the fully fine-tuned MobileNetV3-Small
+(0.721). The main line then moved to a partially fine-tuned SigLIP-B/16, which reaches
+0.9393--0.9481. The reason is visible in the numbers: frozen compact features carry less
+quality information, while foundation features carry much more. We kept the low-parameter
+idea and changed the encoder. The frozen-Large run is no longer an open item; its
+checkpoint and resolved configuration are archived.
 
 \textbf{Random splits were misleading.} The first pilots used the usual image-level split
 and gave correlations near 0.97. A content-level check showed that most of that gain came
@@ -315,12 +320,17 @@ data. We report both sides instead of keeping only the favourable number.
 \label{sec:workbreakdown}
 
 The M1 minimum-viable deliverable was a trained NR-IQA model with a valid comparison
-against the full-reference baselines. We have that: a trained compact baseline and a
-stronger foundation model, both evaluated on the same content-held-out split as PSNR, SSIM
-and LPIPS. One caveat remains. The exact M1 configuration, a frozen MobileNetV3-Large, is
-not the configuration we ran, and Section~\ref{sec:challenges} explains why. We describe
-the MVP as \emph{met in all but one respect, with a documented backbone substitution}; the
-literal M1 recipe has not been executed.
+against the full-reference baselines. We have that in two forms. The literal M1 recipe, a
+frozen MobileNetV3-Large with a two-layer MLP head, reaches 0.569 SROCC and 0.595 PLCC on
+the same content-held-out split as PSNR/SSIM/LPIPS. The stronger foundation model reaches
+0.939--0.948 SROCC. The MVP is therefore \emph{met in its literal form}; the foundation
+model is an extension, not a replacement for a missing run.
+
+The frozen-MVP checkpoint is archived as \path{m2_mobilenetv3_large_frozen.zip} in the
+team Drive under \path{published/} (24.2 MB). It holds \texttt{best.pt},
+\texttt{last.pt}, the resolved \texttt{config.yaml}, environment, summary, metrics and test
+predictions. The full SHA-256 and run metadata are in
+\path{results/m2_mobilenetv3_large_frozen.json}.
 
 \begin{table}[H]
 \centering
@@ -348,10 +358,8 @@ Cross-dataset table; demo; final report figures \\
 \label{sec:next}
 
 \begin{enumerate}[leftmargin=*]
-  \item Run the literal frozen MobileNetV3-Large MVP once, as a completeness check, or
-        state the substitution in the final report.
-  \item Freeze the M2 checkpoint, publish its path and record the resolved configuration
-        used for the headline model.
+  \item Locate or retrain the headline SigLIP-B/16 384 + KonIQ fold checkpoints and publish
+        them with the same manifest and hash format as the frozen MVP.
   \item Add a dependency lock file and align it with the environment that produced the
         reported runs.
   \item Extend the per-distortion analysis with qualitative examples and per-image errors

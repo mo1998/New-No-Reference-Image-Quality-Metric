@@ -52,6 +52,7 @@ for fast iteration and ablations; it is **not** the headline estimate.
 | MSOSNet | none | 0.30 M | 0.721 | 0.730 | 0.483 | 0.530 |
 | WaveQNet | none | 0.08 M | 0.496 | 0.547 | 0.234 | 0.344 |
 | MobileNetV3-Small | ImageNet | 1.52 M | 0.721 | 0.732 | 0.632 | 0.706 |
+| MobileNetV3-Large frozen + MLP (M1 MVP) | ImageNet | 3.22 M | 0.569 | 0.595 | n/a | n/a |
 | ResNet-18 | ImageNet | 11.2 M | 0.769 | 0.779 | 0.678 | 0.713 |
 | CLIP-IQA (PyIQA, zero-shot) | CLIP | ~150 M | 0.435 | 0.465 | 0.529 | 0.613 |
 | MUSIQ (PyIQA, zero-shot) | KonIQ | 27.1 M | 0.511 | 0.561 | 0.491 | 0.599 |
@@ -93,6 +94,11 @@ off-the-shelf NR-IQA metrics.
 All variants use the same single content split (57 train / 8 val / 16 test
 references), so the deltas are directly comparable.  The 5-fold headline model
 uses the full recipe at 224 px.
+
+The frozen MobileNetV3-Large + MLP row is the literal M1 MVP.  Its 0.569 SROCC
+confirms that frozen compact features carry less quality information than the
+fine-tuned compact models (0.721 for MobileNetV3-Small), which is why the main
+line moved to foundation encoders.
 
 **Interpretation.**
 
