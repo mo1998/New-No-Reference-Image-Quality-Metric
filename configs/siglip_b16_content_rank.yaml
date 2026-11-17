@@ -1,0 +1,18 @@
+include: siglip_b16_aux_kadid.yaml
+experiment:
+  name: siglip_b16_content_rank
+data:
+  grouped_batch: true
+  refs_per_batch: 8
+train:
+  epochs: 20
+  loss:
+    mse: 1.0
+    plcc: 0.2
+    rank: 0.1
+    content_rank: 0.3
+    margin: 0.05
+    aux_distortion: 0.2
+    aux_level: 0.1
+  early_stop:
+    patience: 7

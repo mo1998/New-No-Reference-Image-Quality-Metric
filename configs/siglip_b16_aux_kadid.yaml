@@ -1,0 +1,20 @@
+include: siglip_b16_kadid.yaml
+experiment:
+  name: siglip_b16_aux_kadid
+model:
+  kwargs:
+    aux_heads: true
+    num_distortions: 25
+    num_levels: 5
+train:
+  loss:
+    mse: 1.0
+    plcc: 0.2
+    rank: 0.2
+    margin: 0.05
+    aux_distortion: 0.2
+    aux_level: 0.1
+  early_stop:
+    patience: 6
+eval:
+  tta: true

@@ -1,0 +1,14 @@
+include: base.yaml
+experiment:
+  name: mobilenetv3_kadid
+data:
+  norm: imagenet
+model:
+  name: mobilenet_v3_small
+  pretrained: true
+train:
+  epochs: 25
+  lr: 3.0e-4
+  weight_decay: 1.0e-2
+  early_stop:
+    patience: 8

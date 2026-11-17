@@ -1,0 +1,9 @@
+include: siglip_b16_aux_kadid.yaml
+experiment:
+  name: siglip_b16_multidata_kadid
+data:
+  extra_datasets: [tid2013]
+train:
+  epochs: 20
+  early_stop:
+    patience: 7

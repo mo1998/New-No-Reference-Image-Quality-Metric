@@ -1,0 +1,7 @@
+model,form,content,random,note,delta
+arniqa,full fine-tune,0.649,0.9211,single seed,0.2721
+liqe,frozen CLIP + head,0.6756454347764883,0.9441460367633354,"3 seeds; content std 0.1116, random std 0.0002",0.2685006019868471
+clipiqa,frozen CLIP + head,0.8162,0.9027,single seed,0.08649999999999991
+topiq,full fine-tune,0.865,0.933,single seed,0.06800000000000006
+maniqa,frozen ViT + head,0.9021102999929047,0.9678846301110395,"3 seeds; content std 0.0211, random std 0.0029",0.06577433011813483
+ours,full fine-tune,0.9266,0.946,single seed,0.019399999999999973

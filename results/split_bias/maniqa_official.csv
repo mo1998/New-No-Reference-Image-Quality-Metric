@@ -1,0 +1,3 @@
+dataset,split,srocc,plcc,epochs
+kadid10k,content,0.8675,0.8803,20
+kadid10k,random,0.9716,0.9728,20

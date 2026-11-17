@@ -1,0 +1,23 @@
+include: base.yaml
+experiment:
+  name: clip_b16_kadid
+data:
+  norm: none
+  batch_size: 32
+model:
+  name: timm_regressor
+  pretrained: true
+  kwargs:
+    model_name: vit_base_patch16_clip_224.openai
+    freeze_blocks: 8
+    drop_path: 0.1
+    head_hidden: 256
+    dropout: 0.2
+train:
+  epochs: 20
+  batch_size: 32
+  lr: 2.0e-4
+  weight_decay: 5.0e-2
+  warmup_epochs: 2
+  early_stop:
+    patience: 6

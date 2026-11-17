@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.venv2/
 venv/
 env/
 
@@ -23,7 +24,34 @@ data/*
 .vscode/
 .idea/
 .DS_Store
+.archify/
 Thumbs.db
 
 # Session/transcript exports (may contain secrets) - keep out of the repo
 /*.json
+
+# Experiment artifacts (checkpoints, logs, cached features)
+runs/
+runs_*/
+features/
+results/benchmarks/*_predictions.csv
+results/benchmarks/*.json
+results/cv/*_predictions.csv
+
+# Cached model weights
+*.safetensors
+*.bin
+
+# LaTeX build artifacts
+*.aux
+*.blg
+*.log
+*.out
+*.toc
+*.synctex.gz
+
+teacher_preds/
+teacher_feats/
+results/smoke/
+teacher_preds*/
+results/authentic/*_predictions.csv

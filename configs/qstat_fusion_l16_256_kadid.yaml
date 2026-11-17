@@ -1,0 +1,20 @@
+include: qstat_fusion_kadid.yaml
+experiment:
+  name: qstat_fusion_l16_256_kadid
+data:
+  size: 256
+model:
+  kwargs:
+    model_name: vit_large_patch16_siglip_256
+    freeze_blocks: 16
+    drop_path: 0.1
+    fusion_dim: 256
+    dropout: 0.2
+    aux_heads: true
+train:
+  batch_size: 8
+  lr: 8.0e-5
+  weight_decay: 5.0e-2
+  epochs: 10
+  early_stop:
+    patience: 4

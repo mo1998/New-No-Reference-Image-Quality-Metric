@@ -1,0 +1,47 @@
+{
+  "dataset": "livec",
+  "root": "data/livec/LIVEC",
+  "label": "qstat_224",
+  "n_images": 1162,
+  "checkpoints": [
+    "runs/20261107-210332_qstat_fusion_kadid/best.pt"
+  ],
+  "per_checkpoint": [
+    {
+      "checkpoint": "runs/20261107-210332_qstat_fusion_kadid/best.pt",
+      "srocc": 0.6431784146703716,
+      "plcc": 0.6685074095431245,
+      "rmse": 15.094599942816306,
+      "krcc": 0.46396191620025484,
+      "n": 1162
+    }
+  ],
+  "srocc": {
+    "mean": 0.6431784146703716,
+    "std": 0.0,
+    "values": [
+      0.6431784146703716
+    ]
+  },
+  "plcc": {
+    "mean": 0.6685074095431245,
+    "std": 0.0,
+    "values": [
+      0.6685074095431245
+    ]
+  },
+  "rmse": {
+    "mean": 15.094599942816306,
+    "std": 0.0,
+    "values": [
+      15.094599942816306
+    ]
+  },
+  "krcc": {
+    "mean": 0.46396191620025484,
+    "std": 0.0,
+    "values": [
+      0.46396191620025484
+    ]
+  }
+}

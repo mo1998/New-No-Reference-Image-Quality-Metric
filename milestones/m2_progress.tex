@@ -1,0 +1,330 @@
+\documentclass[11pt]{article}
+
+% ============================================================
+% Milestone 2 -- Progress Report
+% DIP Team Project -- Project 28
+% Built from the official Section 6.2 template.
+% ============================================================
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[round]{natbib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, citecolor=blue!50!black, urlcolor=blue!50!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{array}
+\usepackage{needspace}
+
+\graphicspath{{figures/}}
+
+\title{\LARGE Progress Report \\[4pt]
+\large Building and Validating a Lightweight No-Reference Image-Quality Metric}
+\author{
+  Novert Ahmed Fahim Abdelfattah - 2501922 \and
+  Farah Hossam Eldin Mahmoud - 2501897 \and
+  Mohamed Ahmed Fathy Abdelrazik - 2400008
+}
+\date{Milestone 2 --- 17/11/2026 \\{} CSE681 --- Advanced Digital Image Processing}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+No-reference image-quality assessment (NR-IQA) predicts a quality score from a single
+distorted image, without access to the pristine reference. We have reproduced the M1
+full-reference baselines on the held-out KADID-10k test split (LPIPS SROCC 0.808, PSNR
+0.667, SSIM 0.627), implemented a complete training and evaluation framework, and trained
+both compact and foundation-encoder models. The strongest preliminary model, a partially
+fine-tuned SigLIP-B/16 at 384 px with auxiliary distortion/level heads, a ranking loss,
+flip TTA and KonIQ-10k data, reaches \textbf{0.9481 $\pm$ 0.0096 SROCC} over five
+content folds and \textbf{0.7429 $\pm$ 0.0113} zero-shot TID2013 SROCC at 93.4 M
+parameters. The M1 minimum-viable deliverable was reached in substance, with one
+documented backbone substitution.
+\end{abstract}
+
+\section{Recap}
+\label{sec:recap}
+
+NR-IQA is the part of image-quality assessment that survives real deployment: images are
+compressed, resized, filtered and re-encoded before we see them, and the clean original is
+usually unavailable. Full-reference metrics such as PSNR, SSIM and LPIPS cannot score such
+an image because they need the reference. The project therefore trains a regressor that
+maps one distorted image to a human quality label and validates it against KADID-10k
+\citep{lin2019kadid}, with TID2013 \citep{ponomarenko2015tid2013} as a cross-dataset check.
+
+KADID-10k contains 10,125 distorted images generated from 81 reference contents with 25
+distortion types at five levels; MOS is expressed as DMOS in [1, 5], higher is better.
+TID2013 contains 3,000 images from 25 references and 24 distortion types. KonIQ-10k
+\citep{hosu2020koniq} adds 10,073 authentic distortions and is used as extra training data.
+The M1 baseline table used PSNR, SSIM and LPIPS \citep{zhang2018lpips}; the evaluation
+protocol splits by reference content, never by distorted image, and reports SROCC plus
+PLCC/RMSE after a four-parameter logistic fit. The fixed seed is 42.
+
+\section{Implementation Status}
+\label{sec:status}
+
+The repository now contains a complete experiment framework under \texttt{src/nriqa}:
+YAML configuration with inheritance, content-held-out and five-fold splits, training with
+AMP/EMA/early stopping, prediction export, bootstrap confidence intervals, paired
+significance tests, cross-dataset evaluation, ablations, hyper-parameter search, PyIQA
+benchmarking and an inference-cost profiler. Every run stores its resolved configuration,
+environment and git SHA, per-epoch metrics, predictions and a summary. The legacy M1
+scripts and tests remain in the repository and are still used for the baseline table.
+
+\subsection{Baseline Reproduction}
+\label{sec:baseline}
+
+Table~\ref{tab:baseline} reproduces the M1 result on the 2,000-image test split (16 held-out
+reference contents). LPIPS is a distance, so its raw correlation with DMOS is negative; the
+magnitude is reported in the table and the sign convention is stated in the caption. These
+numbers establish that the data pipeline, the content split and the metric implementation
+are correct.
+
+\begin{table}[htbp]
+\centering
+\caption{M1 full-reference baselines on the KADID-10k content-held-out test split
+(n = 2,000 images). LPIPS is oriented so that higher means better; its raw SROCC is
+$-0.808$.}
+\label{tab:baseline}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{SROCC} & \textbf{PLCC} & \textbf{RMSE} \\
+\midrule
+PSNR  & 0.667 & 0.670 & 0.803 \\
+SSIM  & 0.627 & 0.616 & 0.852 \\
+LPIPS & 0.808 & 0.807 & 0.639 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We also reproduced published NR-IQA methods under matched splits. The strongest
+reproduction is the B\_Gated+LoRA adapter recipe at 0.9424 content-held-out SROCC; MANIQA
+\citep{yang2022maniqa}, TOPIQ \citep{chen2024topiq}, LIQE \citep{zhang2023liqe}, ARNIQA
+\citep{agnolucci2024arniqa} and CLIP-IQA \citep{wang2023clipiqa} are included in the split
+audit in Section~\ref{sec:results}. These are re-runs under our protocol, not numbers copied
+from the papers.
+
+\subsection{Proposed Method}
+\label{sec:method}
+
+The project now has two complementary families.
+
+\textbf{From-scratch statistical models.} MSOSNet (0.30 M parameters) uses a fixed
+multi-scale MSCN pyramid, learned depthwise band-pass branches, orderless moment and
+spatial-pyramid pooling, a 20-D colour descriptor, a coarse context branch and gated scale
+fusion. WaveQNet (0.08 M) uses a fixed three-level Haar decomposition, per-sub-band
+statistics and a small transformer over ten band/scale tokens. Both are designed around the
+natural-scene-statistics prior and avoid learning content from only 57--64 training
+contents.
+
+\textbf{Foundation encoders.} SigLIP-B/16 \citep{zhai2023siglip} is partially fine-tuned:
+the patch embedding and the first eight of twelve ViT blocks are frozen, and the remaining
+blocks, a regression head, distortion/level auxiliary heads and a pairwise ranking loss are
+trained. Training uses 224 or 384 px crops, horizontal flips, no colour jitter, AdamW,
+cosine scheduling, AMP and early stopping on validation SROCC. The headline model adds
+KonIQ-10k as extra training data; KonIQ batches mask the KADID distortion/level labels.
+QStatFusion (94 M) gates SigLIP features against the MSOSNet statistical token, which
+targets cross-dataset robustness.
+
+The exact M1 MVP was a frozen MobileNetV3-Large backbone plus a small MLP head. We
+implemented the MobileNetV3 family and the light-head pattern, but the compact baseline
+actually trained for M2 is MobileNetV3-Small with full fine-tuning (0.721 SROCC). The
+foundation models are a deliberate extension beyond the M1 plan, not a hidden substitution;
+the deviation and its justification are stated in Section~\ref{sec:challenges}.
+
+\section{Preliminary Results}
+\label{sec:results}
+
+Table~\ref{tab:models} compares the implemented models on the single content split used for
+fast iteration. It mixes architectures of very different capacity, so it is a diagnostic
+table, not a claim that the largest model is the best engineering choice. The 5-fold
+headline is reported separately in Table~\ref{tab:cv}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Single content split (57 train / 8 validation / 16 test references). TID2013 is
+zero-shot for KADID-only models. QStatFusion and the compact models use this split; the
+best 5-fold result is in Table~\ref{tab:cv}.}
+\label{tab:models}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Method} & \textbf{Params} & \textbf{KADID SROCC} & \textbf{KADID PLCC} & \textbf{TID2013 SROCC} \\
+\midrule
+WaveQNet (from scratch)        & 0.08 M  & 0.496 & 0.547 & 0.234 \\
+MSOSNet (from scratch)         & 0.30 M  & 0.721 & 0.730 & 0.483 \\
+MobileNetV3-Small (fine-tuned) & 1.52 M  & 0.721 & 0.732 & 0.632 \\
+ResNet-18 (fine-tuned)         & 11.2 M  & 0.769 & 0.779 & 0.678 \\
+SigLIP-B/16 224 + aux/rank/TTA & 93.1 M  & 0.897 & 0.907 & 0.726 \\
+QStatFusion 224                & 93.8 M  & 0.889 & 0.897 & \textbf{0.753} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig_m1_baselines.pdf}
+\caption{M1 full-reference baselines on the 2,000-image KADID-10k test split. Each point is
+one distorted image; the title gives Spearman correlation with DMOS. LPIPS is shown as a
+distance, so its correlation is negative in the raw data and is oriented in
+Table~\ref{tab:baseline}.}
+\label{fig:baselines}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Five-fold content cross-validation on KADID-10k. Each fold holds out 16 reference
+contents. TID2013 is evaluated zero-shot from the KADID-trained checkpoint.}
+\label{tab:cv}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Method} & \textbf{Params} & \textbf{KADID SROCC} & \textbf{KADID PLCC} & \textbf{TID2013 SROCC} \\
+\midrule
+SigLIP-B/16 384, KADID + KonIQ & 93.4 M  & \textbf{0.9481 $\pm$ 0.0096} & \textbf{0.9524} & \textbf{0.7429 $\pm$ 0.0113} \\
+SigLIP-L/16 384 + aux/rank/TTA & 316.6 M & 0.9481 $\pm$ 0.0074 & 0.9526 & 0.7232 $\pm$ 0.0205 \\
+SigLIP-B/16 384 + aux/rank/TTA & 93.4 M  & 0.9393 $\pm$ 0.0149 & 0.9441 & 0.7166 $\pm$ 0.0123 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{fig_model_comparison.pdf}
+\caption{Single-split comparison of the implemented families. The from-scratch models
+(0.08--0.30 M) are far below the foundation encoders; QStatFusion trades a small KADID
+loss for the best TID2013 result on this split.}
+\label{fig:models}
+\end{figure}
+
+The most important preliminary finding is not a single headline number but the effect of
+the split protocol. Retraining published methods under matched random and content-held-out
+splits shows that random image-level splits leak reference content into the test set and
+inflate every method (Figure~\ref{fig:split}). B\_Gated+LoRA moves from 0.9424 to 0.9731,
+our model from 0.9416 to 0.9670, and MANIQA from 0.8830 to 0.9704. Under the content
+protocol the top three methods are statistically tied; the defensible claim is parity with
+much larger foundation probes at 93.4 M parameters, not superiority.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{fig_split_audit.pdf}
+\caption{Random versus content-held-out KADID-10k SROCC for methods retrained under matched
+splits. The gap is content leakage: the same model looks much stronger when different
+distorted versions of the same reference appear in both train and test.}
+\label{fig:split}
+\end{figure}
+
+Figure~\ref{fig:distortion} breaks the 384 px model down by distortion family. It is strong
+on colour saturation (0.941), block-wise distortions (0.934), Gaussian blur (0.933) and
+Gaussian noise (0.927), and weak on hue shift (0.476), sparse sampling (0.496),
+multiplicative noise (0.499) and quantisation (0.557). These are the failure modes that
+motivate the colour-aware and frequency-aware extensions in the M3 plan.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{fig_per_distortion.pdf}
+\caption{Within-distortion SROCC of the 384 px single-split model. The dashed line is the
+mean over families (0.814). Hue shift and sparse sampling are the clearest remaining
+failure modes.}
+\label{fig:distortion}
+\end{figure}
+
+\section{Challenges \& Deviations from the M1 Plan}
+\label{sec:challenges}
+
+\textbf{The backbone changed.} M1 proposed a frozen MobileNetV3-Large with an MLP head.
+The compact baseline that we trained is MobileNetV3-Small with full fine-tuning, and the
+main line moved to partially fine-tuned SigLIP-B/16. The reason is empirical: from-scratch
+and compact models plateau around 0.72 SROCC on 57--64 training contents, while frozen
+foundation features carry substantially more quality information. We kept the
+light-head/low-parameter spirit of the M1 plan but changed the encoder. The code supports
+MobileNetV3-Large and a \texttt{freeze} switch; the exact frozen-Large MVP is a short run
+that remains on the pre-M3 checklist rather than a number we claim without running it.
+
+\textbf{Random splits were misleading.} The first pilots used the common image-level split
+and produced correlations near 0.97. A content-level audit showed that this was largely
+content leakage, not model quality. We switched every headline number to a content-held-out
+or five-fold content protocol and added the split audit to the repository. This is a
+deviation from the protocol used in much of the NR-IQA literature, and it is deliberate.
+
+\textbf{Full fine-tuning overfits.} Unfreezing all 93 M parameters on 57 training contents
+peaks early and then degrades; partial fine-tuning is consistently better. The same pattern
+appeared in the compact CNNs. We therefore report partial fine-tuning as the default and
+use full fine-tuning only as an ablation.
+
+\textbf{Some published methods were unstable under retraining.} LIQE and MANIQA required
+native/cross-entropy or soft-label objectives to avoid collapse on the small content split.
+The split audit reports the stable recipe for each method and keeps the reproduction
+candid; it also shows that the random-split ranking is not a reliable guide to the content
+ranking.
+
+\textbf{Resolution and data trade-offs.} Higher resolution helps in-dataset but can hurt
+cross-dataset generalisation, and KonIQ training adds a large authentic-data dependency.
+We report both effects instead of selecting only the favourable number.
+
+\section{Updated Work Breakdown \& MVP Status}
+\label{sec:workbreakdown}
+
+\textbf{MVP status.} The M1 minimum-viable deliverable was a trained NR-IQA model with a
+valid comparison against the full-reference baselines. That objective is met: the
+repository contains a trained compact baseline and a stronger foundation model, both
+evaluated on the same content-held-out split as PSNR/SSIM/LPIPS. The exact M1 configuration
+(frozen MobileNetV3-Large) was not the configuration we ran; the substitution is documented
+above. We therefore describe the MVP as \emph{reached in substance, with one documented
+backbone substitution}, rather than claiming that the literal M1 recipe was executed.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Updated milestone allocation. The M2 column records what was actually completed;
+the M3 column is the plan for Weeks 7--9.}
+\label{tab:tasks}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.12\linewidth}>{\raggedright\arraybackslash}p{0.26\linewidth}>{\raggedright\arraybackslash}p{0.26\linewidth}>{\raggedright\arraybackslash}p{0.26\linewidth}@{}}
+\toprule
+\textbf{Milestone} & \textbf{Student A} & \textbf{Student B} & \textbf{Student C} \\
+\midrule
+M2 (Wk 6) -- completed &
+Dataset/split pipeline; baseline reproduction; split audit &
+Model and training code; compact and foundation checkpoints; ablations &
+Evaluation harness; CV/bootstrap tables; figures and this report \\
+M3 (Wk 9) -- planned &
+Final baselines; TID2013/KonIQ pipeline; reproducibility check &
+Final model and ablations; efficiency measurements &
+Cross-dataset table; demo; final report figures \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Next Steps}
+\label{sec:next}
+
+\begin{enumerate}[leftmargin=*]
+  \item Run the literal frozen MobileNetV3-Large MVP once and report it as a completeness
+        check, or state the substitution explicitly in the final report.
+  \item Freeze the M2 checkpoint, publish its path/link and record the exact resolved
+        configuration used for the headline model.
+  \item Add a dependency lock file and align the pins with the environment that produced the
+        reported runs.
+  \item Extend the per-distortion analysis to qualitative examples and per-image error
+        inspection for the M3 report.
+  \item Complete the M3 ablation and cross-dataset tables, then package the demo and final
+        report.
+\end{enumerate}
+
+\needspace{9\baselineskip}
+\section*{AI-Tool Usage Disclosure}
+AI tools were used for code scaffolding, debugging, literature search and \LaTeX{} editing.
+All research planning, study design, experimental runs and reported numbers were executed
+and verified by the human team.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,14 @@
+include: siglip_b16_aux_kadid.yaml
+experiment:
+  name: qstat_fusion_kadid
+model:
+  name: qstat_fusion
+  kwargs:
+    model_name: vit_base_patch16_siglip_224
+    freeze_blocks: 8
+    drop_path: 0.1
+    stats_widths: [16, 24, 32, 40]
+    stats_scales: 4
+    fusion_dim: 256
+    dropout: 0.2
+    aux_heads: true

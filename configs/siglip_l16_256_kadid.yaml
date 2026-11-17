@@ -1,0 +1,21 @@
+include: siglip_b16_aux_kadid.yaml
+experiment:
+  name: siglip_l16_256_kadid
+data:
+  size: 256
+model:
+  kwargs:
+    model_name: vit_large_patch16_siglip_256
+    freeze_blocks: 16
+    drop_path: 0.1
+    head_hidden: 256
+    dropout: 0.2
+train:
+  batch_size: 16
+  lr: 1.0e-4
+  weight_decay: 5.0e-2
+  epochs: 12
+  early_stop:
+    patience: 5
+eval:
+  tta: true

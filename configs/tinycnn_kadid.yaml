@@ -1,0 +1,9 @@
+include: base.yaml
+experiment:
+  name: tinycnn_kadid
+model:
+  name: tinycnn
+  pretrained: false
+  kwargs:
+    width: 32
+    dropout: 0.1

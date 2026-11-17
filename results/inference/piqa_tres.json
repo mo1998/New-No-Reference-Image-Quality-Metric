@@ -1,0 +1,6 @@
+{
+  "model": "tres",
+  "params": 152452265,
+  "input_size": 224,
+  "latency_ms_batch1": 87.49531547073275
+}

@@ -1,0 +1,22 @@
+include: base_pyiqa.yaml
+experiment:
+  name: maniqa_ce
+model:
+  name: maniqa_stable
+  kwargs:
+    class_head: true
+train:
+  batch_size: 4
+  lr: 1.0e-4
+  epochs: 4
+  amp: false
+  optimizer: adamw
+  grad_clip: 1.0
+  loss:
+    mse: 0.0
+    plcc: 0.0
+    rank: 0.0
+    content_rank: 0.0
+    quality_ce: 1.0
+eval:
+  batch_size: 4

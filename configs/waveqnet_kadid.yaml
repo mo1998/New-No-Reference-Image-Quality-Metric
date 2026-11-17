@@ -1,0 +1,11 @@
+include: base.yaml
+experiment:
+  name: waveqnet_kadid
+model:
+  name: waveqnet
+  kwargs:
+    levels: 3
+    embed_dim: 64
+    depth: 2
+    nhead: 4
+    dropout: 0.1

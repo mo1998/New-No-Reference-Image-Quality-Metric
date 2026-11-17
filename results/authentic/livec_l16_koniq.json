@@ -1,0 +1,47 @@
+{
+  "dataset": "livec",
+  "root": "data/livec/LIVEC",
+  "label": "l16_koniq",
+  "n_images": 1162,
+  "checkpoints": [
+    "runs/20261108-013959_siglip_l16_384_koniq/best.pt"
+  ],
+  "per_checkpoint": [
+    {
+      "checkpoint": "runs/20261108-013959_siglip_l16_384_koniq/best.pt",
+      "srocc": 0.8845989120773985,
+      "plcc": 0.9054539211747905,
+      "rmse": 8.61472881739278,
+      "krcc": 0.705672783231951,
+      "n": 1162
+    }
+  ],
+  "srocc": {
+    "mean": 0.8845989120773985,
+    "std": 0.0,
+    "values": [
+      0.8845989120773985
+    ]
+  },
+  "plcc": {
+    "mean": 0.9054539211747905,
+    "std": 0.0,
+    "values": [
+      0.9054539211747905
+    ]
+  },
+  "rmse": {
+    "mean": 8.61472881739278,
+    "std": 0.0,
+    "values": [
+      8.61472881739278
+    ]
+  },
+  "krcc": {
+    "mean": 0.705672783231951,
+    "std": 0.0,
+    "values": [
+      0.705672783231951
+    ]
+  }
+}

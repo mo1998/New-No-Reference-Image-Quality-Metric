@@ -1,0 +1,12 @@
+include: base.yaml
+experiment:
+  name: msosnet_kadid
+model:
+  name: msosnet
+  kwargs:
+    widths: [16, 24, 32, 40]
+    scales: 4
+    embed_dim: 64
+    context_width: 24
+    dropout: 0.1
+    aux_heads: false

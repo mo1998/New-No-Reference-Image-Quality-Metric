@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+
+% ============================================================
+% Milestone 3 -- Final Report Template
+% DIP Team Project
+% ============================================================
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[round]{natbib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, citecolor=blue!50!black, urlcolor=blue!50!black}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+\title{\LARGE \todo{Project Title} \\[4pt]
+\large Final Report}
+\author{
+  \todo{Student A Full Name} \and
+  \todo{Student B Full Name} \and
+  \todo{Student C Full Name}
+}
+\date{Milestone 3 --- \todo{Date} \\{} [COURSE CODE] --- Digital Image Processing}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\todo{150--250 words. Problem, approach, dataset, headline quantitative result vs.
+the stated baseline/SOTA reference, and one-sentence takeaway. Write this last.}
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+\todo{What problem, why it matters, what you did, and a one-paragraph summary of your
+findings (reviewers should be able to read the intro and abstract alone and know what
+you found).}
+
+\section{Related Work}
+\label{sec:related}
+\todo{Position your work relative to the references identified at M1 (and any added
+since). Group by theme, not by chronology. At least 2 references should be from
+2023--2026.}
+
+\section{Method}
+\label{sec:method}
+\todo{Describe your final approach precisely enough that another team could
+reimplement it: architecture, loss function(s), training procedure, hyperparameters.
+Use an algorithm block or architecture figure if it helps.}
+
+\begin{figure}[h]
+\centering
+% \includegraphics[width=0.85\linewidth]{figures/architecture.png}
+\caption{\todo{Architecture / pipeline diagram.}}
+\label{fig:arch}
+\end{figure}
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\subsection{Dataset}
+\todo{Exact subset used (count, selection method, random seed), license, and any
+preprocessing.}
+
+\subsection{Baseline(s)}
+\todo{Exact baseline(s) you compare against, and confirmation that your reproduction
+matches published numbers (or an explanation of any gap).}
+
+\subsection{Metrics \& Protocol}
+\todo{Every metric used, computed how, and the exact comparison protocol (e.g.,
+bpp-matching procedure for rate--distortion comparisons, train/val/test split, number
+of seeds).}
+
+\section{Results}
+\label{sec:results}
+
+\begin{table}[h]
+\centering
+\caption{Main quantitative comparison against the baseline.}
+\label{tab:main}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Method} & \textbf{Metric 1} & \textbf{Metric 2} & \textbf{Metric 3} & \textbf{Compute/Runtime} \\
+\midrule
+Baseline      & \todo{val} & \todo{val} & \todo{val} & \todo{val} \\
+Ours          & \todo{val} & \todo{val} & \todo{val} & \todo{val} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+% \includegraphics[width=0.48\linewidth]{figures/qual1.png}
+% \includegraphics[width=0.48\linewidth]{figures/qual2.png}
+\caption{\todo{Qualitative comparison. Describe exactly what is shown, including any
+failure cases -- do not caption a figure with what you expected it to show.}}
+\label{fig:qual}
+\end{figure}
+
+\subsection{Ablation Studies}
+\label{sec:ablation}
+\todo{At least one ablation isolating the effect of your main design choice. Table or
+plot required, not just prose.}
+
+\section{Discussion \& Limitations}
+\label{sec:discussion}
+\todo{What worked, what didn't, and why (to the best of your understanding). Be
+explicit about limitations -- scope, dataset size, compute budget, anything that would
+change if this were scaled up. A paper that honestly analyzes its limitations is
+graded higher than one that overclaims.}
+
+\section{Conclusion}
+\label{sec:conclusion}
+\todo{2--4 sentences: what you built, what you found, what you would do next with more
+time/compute.}
+
+\section*{Individual Contributions}
+\label{sec:contributions}
+\todo{One sentence per student stating their primary contributions, consistent with
+the peer-evaluation form submitted separately.}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\appendix
+\section{Additional Results}
+\label{sec:appendix}
+\todo{Optional: extra qualitative examples, full hyperparameter tables, or results
+that did not fit in the main body.}
+
+\end{document}

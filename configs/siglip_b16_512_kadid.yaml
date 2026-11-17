@@ -1,0 +1,14 @@
+include: siglip_b16_384_kadid.yaml
+experiment:
+  name: siglip_b16_512_kadid
+data:
+  size: 512
+model:
+  kwargs:
+    model_name: vit_base_patch16_siglip_384
+    dynamic_img_size: true
+train:
+  batch_size: 8
+  epochs: 8
+  early_stop:
+    patience: 3

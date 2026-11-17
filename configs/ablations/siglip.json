@@ -1,0 +1,54 @@
+{
+  "variants": [
+    {
+      "name": "abl_no_aux",
+      "overrides": {
+        "model.kwargs.aux_heads": false,
+        "train.loss.aux_distortion": 0.0,
+        "train.loss.aux_level": 0.0
+      }
+    },
+    {
+      "name": "abl_no_rank",
+      "overrides": {
+        "train.loss.rank": 0.0
+      }
+    },
+    {
+      "name": "abl_no_tta",
+      "overrides": {
+        "eval.tta": false
+      }
+    },
+    {
+      "name": "abl_freeze6",
+      "overrides": {
+        "model.kwargs.freeze_blocks": 6
+      }
+    },
+    {
+      "name": "abl_freeze10",
+      "overrides": {
+        "model.kwargs.freeze_blocks": 10
+      }
+    },
+    {
+      "name": "abl_rank05",
+      "overrides": {
+        "train.loss.rank": 0.5
+      }
+    },
+    {
+      "name": "abl_lr5e5",
+      "overrides": {
+        "train.lr": 0.00005
+      }
+    },
+    {
+      "name": "abl_lr5e4",
+      "overrides": {
+        "train.lr": 0.0005
+      }
+    }
+  ]
+}

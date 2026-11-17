@@ -1,0 +1,8 @@
+{
+  "train.lr": {"type": "loguniform", "low": 3e-5, "high": 6e-4},
+  "train.weight_decay": {"type": "loguniform", "low": 1e-3, "high": 1e-1},
+  "model.kwargs.freeze_blocks": {"type": "choice", "values": [4, 6, 8, 10]},
+  "model.kwargs.drop_path": {"type": "choice", "values": [0.0, 0.1, 0.2]},
+  "train.loss.rank": {"type": "choice", "values": [0.0, 0.1, 0.2, 0.5]},
+  "train.loss.plcc": {"type": "choice", "values": [0.0, 0.1, 0.2, 0.4]}
+}

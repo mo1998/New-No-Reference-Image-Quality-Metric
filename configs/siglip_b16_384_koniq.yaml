@@ -1,0 +1,13 @@
+include: siglip_b16_384_kadid.yaml
+experiment:
+  name: siglip_b16_384_koniq
+data:
+  extra_datasets: [koniq10k]
+  koniq_root: data/koniq
+  num_workers: 10
+train:
+  epochs: 8
+  batch_size: 16
+  lr: 1.0e-4
+  early_stop:
+    patience: 3

@@ -1,0 +1,6 @@
+{
+  "model": "topiq_nr",
+  "params": 45196934,
+  "input_size": 224,
+  "latency_ms_batch1": 4.570771532598883
+}

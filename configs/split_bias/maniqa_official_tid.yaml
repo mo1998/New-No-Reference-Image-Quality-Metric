@@ -1,0 +1,7 @@
+include: maniqa_official.yaml
+data:
+  dataset: tid2013
+  root: data/tid2013
+  test_frac: 0.12
+  val_frac: 0.08
+  eval_datasets: [tid2013]

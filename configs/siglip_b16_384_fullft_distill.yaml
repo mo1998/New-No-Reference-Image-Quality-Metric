@@ -1,0 +1,13 @@
+include: siglip_b16_384_featdistill.yaml
+experiment:
+  name: siglip_b16_384_fullft_distill
+model:
+  kwargs:
+    freeze_blocks: 0
+    distill_dim: 1024
+train:
+  epochs: 8
+  lr: 5.0e-5
+  weight_decay: 1.0e-1
+  early_stop:
+    patience: 3

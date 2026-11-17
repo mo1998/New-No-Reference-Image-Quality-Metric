@@ -1,0 +1,6 @@
+{
+  "model": "dbcnn",
+  "params": 15311345,
+  "input_size": 224,
+  "latency_ms_batch1": 1.4137104735709727
+}
