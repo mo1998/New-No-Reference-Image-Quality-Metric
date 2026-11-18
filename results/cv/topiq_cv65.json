@@ -1,0 +1,73 @@
+{
+  "n_folds": 5,
+  "folds": [
+    {
+      "best_epoch": 4,
+      "test_srocc": 0.8403872325057352,
+      "test_plcc": 0.8508052347242571,
+      "tid_srocc": null,
+      "params": 45196934,
+      "summary": "runs_cv65_split_bias/20261118-015049_topiq_cv65_f0/summary.json"
+    },
+    {
+      "best_epoch": 1,
+      "test_srocc": 0.8368987001195292,
+      "test_plcc": 0.8420851894542881,
+      "tid_srocc": null,
+      "params": 45196934,
+      "summary": "runs_cv65_split_bias/20261118-015507_topiq_cv65_f1/summary.json"
+    },
+    {
+      "best_epoch": 8,
+      "test_srocc": 0.8450723182853733,
+      "test_plcc": 0.8530051086373898,
+      "tid_srocc": null,
+      "params": 45196934,
+      "summary": "runs_cv65_split_bias/20261118-015736_topiq_cv65_f2/summary.json"
+    },
+    {
+      "best_epoch": 2,
+      "test_srocc": 0.8772676708653004,
+      "test_plcc": 0.8899915544322398,
+      "tid_srocc": null,
+      "params": 45196934,
+      "summary": "runs_cv65_split_bias/20261118-020055_topiq_cv65_f3/summary.json"
+    },
+    {
+      "best_epoch": 1,
+      "test_srocc": 0.87294380356671,
+      "test_plcc": 0.8806428628362775,
+      "tid_srocc": null,
+      "params": 45196934,
+      "summary": "runs_cv65_split_bias/20261118-020337_topiq_cv65_f4/summary.json"
+    }
+  ],
+  "test": {
+    "mean": 0.8545139450685296,
+    "std": 0.019081384257012765,
+    "min": 0.8368987001195292,
+    "max": 0.8772676708653004,
+    "values": [
+      0.840387,
+      0.836899,
+      0.845072,
+      0.877268,
+      0.872944
+    ]
+  },
+  "test_plcc": {
+    "mean": 0.8633059900168906,
+    "std": 0.02076888251639906,
+    "min": 0.8420851894542881,
+    "max": 0.8899915544322398,
+    "values": [
+      0.850805,
+      0.842085,
+      0.853005,
+      0.889992,
+      0.880643
+    ]
+  },
+  "name": "topiq_cv65",
+  "config": "configs/split_bias/base_pyiqa.yaml"
+}

@@ -1,0 +1,73 @@
+{
+  "n_folds": 5,
+  "folds": [
+    {
+      "best_epoch": 5,
+      "test_srocc": 0.8636444993232456,
+      "test_plcc": 0.8693909133993853,
+      "tid_srocc": null,
+      "params": 23512129,
+      "summary": "runs_cv65_split_bias/20261118-020606_arniqa_cv65_f0/summary.json"
+    },
+    {
+      "best_epoch": 2,
+      "test_srocc": 0.8528456300567857,
+      "test_plcc": 0.8584237473249084,
+      "tid_srocc": null,
+      "params": 23512129,
+      "summary": "runs_cv65_split_bias/20261118-020858_arniqa_cv65_f1/summary.json"
+    },
+    {
+      "best_epoch": 1,
+      "test_srocc": 0.8583247376401574,
+      "test_plcc": 0.8660833047153909,
+      "tid_srocc": null,
+      "params": 23512129,
+      "summary": "runs_cv65_split_bias/20261118-021123_arniqa_cv65_f2/summary.json"
+    },
+    {
+      "best_epoch": 2,
+      "test_srocc": 0.7775357726747799,
+      "test_plcc": 0.7835263873369773,
+      "tid_srocc": null,
+      "params": 23512129,
+      "summary": "runs_cv65_split_bias/20261118-021340_arniqa_cv65_f3/summary.json"
+    },
+    {
+      "best_epoch": 3,
+      "test_srocc": 0.8379895229155837,
+      "test_plcc": 0.8432411043651306,
+      "tid_srocc": null,
+      "params": 23512129,
+      "summary": "runs_cv65_split_bias/20261118-021607_arniqa_cv65_f4/summary.json"
+    }
+  ],
+  "test": {
+    "mean": 0.8380680325221105,
+    "std": 0.03516755532855881,
+    "min": 0.7775357726747799,
+    "max": 0.8636444993232456,
+    "values": [
+      0.863644,
+      0.852846,
+      0.858325,
+      0.777536,
+      0.83799
+    ]
+  },
+  "test_plcc": {
+    "mean": 0.8441330914283585,
+    "std": 0.03534812760869061,
+    "min": 0.7835263873369773,
+    "max": 0.8693909133993853,
+    "values": [
+      0.869391,
+      0.858424,
+      0.866083,
+      0.783526,
+      0.843241
+    ]
+  },
+  "name": "arniqa_cv65",
+  "config": "configs/split_bias/base_pyiqa.yaml"
+}

@@ -1,0 +1,73 @@
+{
+  "n_folds": 5,
+  "folds": [
+    {
+      "best_epoch": 5,
+      "test_srocc": 0.7473369861577951,
+      "test_plcc": 0.7542573074780102,
+      "tid_srocc": null,
+      "params": 102271842,
+      "summary": "runs_cv65_split_bias/20261118-021928_clipiqa_cv65_f0/summary.json"
+    },
+    {
+      "best_epoch": 7,
+      "test_srocc": 0.7817814026787396,
+      "test_plcc": 0.7847248839668504,
+      "tid_srocc": null,
+      "params": 102271842,
+      "summary": "runs_cv65_split_bias/20261118-022240_clipiqa_cv65_f1/summary.json"
+    },
+    {
+      "best_epoch": 1,
+      "test_srocc": 0.8075251166038431,
+      "test_plcc": 0.814601995554054,
+      "tid_srocc": null,
+      "params": 102271842,
+      "summary": "runs_cv65_split_bias/20261118-022523_clipiqa_cv65_f2/summary.json"
+    },
+    {
+      "best_epoch": 10,
+      "test_srocc": 0.8760758050649898,
+      "test_plcc": 0.8884348670743707,
+      "tid_srocc": null,
+      "params": 102271842,
+      "summary": "runs_cv65_split_bias/20261118-022911_clipiqa_cv65_f3/summary.json"
+    },
+    {
+      "best_epoch": 1,
+      "test_srocc": 0.8427297349653768,
+      "test_plcc": 0.850484869183082,
+      "tid_srocc": null,
+      "params": 102271842,
+      "summary": "runs_cv65_split_bias/20261118-023203_clipiqa_cv65_f4/summary.json"
+    }
+  ],
+  "test": {
+    "mean": 0.811089809094149,
+    "std": 0.05039934705175822,
+    "min": 0.7473369861577951,
+    "max": 0.8760758050649898,
+    "values": [
+      0.747337,
+      0.781781,
+      0.807525,
+      0.876076,
+      0.84273
+    ]
+  },
+  "test_plcc": {
+    "mean": 0.8185007846512734,
+    "std": 0.05290792457297544,
+    "min": 0.7542573074780102,
+    "max": 0.8884348670743707,
+    "values": [
+      0.754257,
+      0.784725,
+      0.814602,
+      0.888435,
+      0.850485
+    ]
+  },
+  "name": "clipiqa_cv65",
+  "config": "configs/split_bias/clipiqa_probe.yaml"
+}
