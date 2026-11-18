@@ -48,12 +48,15 @@ LoDa (0.931) and ARNIQA (0.908).  After the split-protocol audit
 **statistical tie**: ours **0.9416 five-seed / 0.9481 five-fold**,
 B_Gated+LoRA **0.9424** and SigLIP2 **0.9392** (paired p = 0.772 and 0.588).
 The remaining methods fall to **0.9270 / 0.8830 / 0.8470 / 0.8225 / 0.8210 /
-0.7716**.  The five-fold estimate is the only like-for-like five-fold
-comparison available (SigLIP2 **0.9342**, i.e. +0.0139 for ours), and the LoRA
-adapters lift B_Gated from 0.9270 to 0.9424 (p = 0.029).  The defensible claim
-is therefore **parity with the foundation-scale leaders at 93.4 M parameters,
-10.9 ms and 390 MB** — 3.4× fewer parameters, 27% lower latency and roughly 3×
-lower memory than the 316 M foundation probes — **not superiority**.  The TID
+0.7716** on five seeds.  All nine models were also run five-fold: ours is then
+highest at **0.9481**, ahead of B_Gated+LoRA **0.9420** (paired fold p = 0.087)
+and SigLIP2 **0.9342** (p = 0.030), with the rest at **0.9351 / 0.8878 / 0.8545
+/ 0.8381 / 0.8111 / 0.8088**.  The LoRA adapters lift B_Gated from 0.9270 to
+0.9424 on five seeds (p = 0.029).  The defensible claim is therefore **parity
+with the foundation-scale leaders at 93.4 M parameters, 10.9 ms and 390 MB** —
+3.4× fewer parameters, 27% lower latency and roughly 3× lower memory than the
+316 M foundation probes — with a slight edge on the five-fold estimator but
+**not proven superiority**.  The TID
 result (0.743) is second only to the 94 M QStatFusion (0.753).  This is **not an
 absolute state of the art** (0.970 remains) and not a controlled *win*: it is a
 production-viable, lightweight point that matches the leaders within noise and
@@ -349,31 +352,34 @@ TID content error bars are wide because only three references are held out.
 
 ### 4.10 Controlled comparison with foundation leaders
 
-| Model | Params | Content SROCC | Content 5-fold | Random SROCC | Note |
+| Model | Params | Content SROCC (5 seeds) | Content 5-fold | Random SROCC | Note |
 |---|---:|---:|---:|---:|---|
-| B_Gated + LoRA | 319.7 M (3.4 M trainable) | **0.9424** | — | 0.9731 | paper recipe; tied with ours (p=0.772) |
-| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | 0.9416 | **0.9481** | 0.9670 | tied with both leaders |
-| SigLIP2-L/16 384 | 316.6 M | 0.9392 | 0.9342 | 0.9706 | same five folds as ours |
-| B_Gated, no LoRA | 316.5 M | 0.9270 | — | 0.9689 | ablation without adapters |
-| MANIQA (official) | 135.7 M | 0.8830 | — | 0.9704 | official recipe |
-| TOPIQ | 45.2 M | 0.8470 | — | 0.9528 | 5 seeds |
-| LIQE | 151.3 M | 0.8225 | — | 0.9183 | 5 seeds, native CE |
-| ARNIQA | 23.5 M | 0.8210 | — | 0.9545 | 5 seeds |
-| CLIP-IQA | 102.3 M | 0.7716 | — | 0.9331 | 5 seeds, probe |
+| B_Gated + LoRA | 319.7 M (3.4 M trainable) | **0.9424** | 0.9420 ± 0.0049 | 0.9731 | paper recipe |
+| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | 0.9416 | **0.9481 ± 0.0096** | 0.9670 | best five-fold |
+| SigLIP2-L/16 384 | 316.6 M | 0.9392 | 0.9342 ± 0.0118 | 0.9706 | same folds as ours |
+| B_Gated, no LoRA | 316.5 M | 0.9270 | 0.9351 ± 0.0088 | 0.9689 | ablation without adapters |
+| MANIQA (official) | 135.7 M | 0.8830 | 0.8878 ± 0.0143 | 0.9704 | official recipe |
+| TOPIQ | 45.2 M | 0.8470 | 0.8545 ± 0.0191 | 0.9528 | 5 seeds, 5 folds |
+| LIQE | 151.3 M | 0.8225 | 0.8088 ± 0.0330 | 0.9183 | native CE |
+| ARNIQA | 23.5 M | 0.8210 | 0.8381 ± 0.0352 | 0.9545 | 5 seeds, 5 folds |
+| CLIP-IQA | 102.3 M | 0.7716 | 0.8111 ± 0.0504 | 0.9331 | probe |
 
-An em dash in the 5-fold column means **not run**: a five-fold estimate costs
-five extra trainings per model, and only ours and SigLIP2 were run that way.
+Both estimators are now measured for every model, and they disagree by up to
+0.04 for the weak models (CLIP-IQA 0.772 → 0.811, ARNIQA 0.821 → 0.838, LIQE
+0.823 → 0.809), so the table reports both rather than picking one.
 
-Under the controlled content protocol the top three are **statistically tied**:
-ours 0.9416, B_Gated+LoRA 0.9424 (p=0.772) and SigLIP2-L 0.9392 (p=0.588),
-while our model uses 3.4× fewer parameters (**93.4 M vs 320 M**).  On the
-like-for-like five-fold estimator ours scores **0.9481 ± 0.0096** against
-SigLIP2's **0.9342 ± 0.0118**.  SigLIP2's random 0.9706, B_Gated+LoRA's 0.9731
-and MANIQA's 0.9704 are inflated by content leakage.  B_Gated+LoRA is our
-reproduction of the paper's recipe (SigLIP2-L + rank-16 `q/k/v/out` adapters +
-per-channel activation blend).  This is a **controlled efficiency result** —
-parity with the leaders at 3.4× fewer parameters — not an absolute SOTA claim
-and not a significant win over any of them.
+Under the five-seed single-split estimator the top three are **statistically
+tied**: ours 0.9416, B_Gated+LoRA 0.9424 (p=0.772) and SigLIP2-L 0.9392
+(p=0.588), while our model uses 3.4× fewer parameters (**93.4 M vs 320 M**).
+On the five-fold estimator ours is **highest at 0.9481 ± 0.0096**, ahead of
+B_Gated+LoRA 0.9420 (paired fold p=0.087, not significant) and SigLIP2 0.9342
+(p=0.030); every other model is lower with p ≤ 0.003.  SigLIP2's random 0.9706,
+B_Gated+LoRA's 0.9731 and MANIQA's 0.9704 are inflated by content leakage.
+B_Gated+LoRA is our reproduction of the paper's recipe (SigLIP2-L + rank-16
+`q/k/v/out` adapters + per-channel activation blend).  The result is a
+**controlled efficiency result** — parity with the leaders at 3.4× fewer
+parameters, with a modest edge on the fold estimator — not an absolute SOTA
+claim and not a significant win over B_Gated+LoRA.
 
 ## 5. What worked, what did not
 

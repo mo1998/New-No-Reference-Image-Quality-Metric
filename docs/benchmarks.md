@@ -243,9 +243,13 @@ Random image-level KADID splits inflate the re-run NR-IQA methods by
 content-held-out split; a zero-shot control shows the random test subset is not
 easier.  Under the controlled content split the 93 M KonIQ model reaches
 **0.9416 ± 0.0137** over five single splits / **0.9481 ± 0.0096** five-fold,
-while the published methods reach B_Gated+LoRA 0.9424, SigLIP2 0.9392,
-no-LoRA B_Gated 0.9270, MANIQA 0.8830, TOPIQ 0.8470, LIQE 0.8225, ARNIQA 0.8210
-and CLIP-IQA 0.7716.  The three leaders are statistically indistinguishable.
+while the published methods reach (five seeds / five folds) B_Gated+LoRA
+0.9424 / 0.9420, SigLIP2 0.9392 / 0.9342, no-LoRA B_Gated 0.9270 / 0.9351,
+MANIQA 0.8830 / 0.8878, TOPIQ 0.8470 / 0.8545, LIQE 0.8225 / 0.8088, ARNIQA
+0.8210 / 0.8381 and CLIP-IQA 0.7716 / 0.8111.  On single splits the three
+leaders are statistically indistinguishable; on five folds ours is nominally
+first, but only the SigLIP2 gap is significant (paired fold p=0.030, vs 0.087
+for B_Gated+LoRA).
 TID2013 replication (2,400/240/360, 20/2/3 refs): random splits inflate the
 methods by +0.042 to +0.272 (MANIQA official 0.7819→0.9686), while our model
 gains +0.019 (0.9266 content vs 0.9460 random).  Details and caveats:

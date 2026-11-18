@@ -116,33 +116,34 @@ probe is retained.
 
 | Model | Params | Content SROCC (5 seeds) | Content 5-fold CV | Random SROCC |
 |---|---:|---:|---:|---:|
-| B_Gated + LoRA | 319.7 M (3.4 M trainable) | **0.9424** | — | 0.9731 |
-| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | 0.9416 | **0.9481** | 0.9670 |
-| SigLIP2-L/16 384 | 316.6 M | 0.9392 | 0.9342 | 0.9706 |
-| B_Gated (no LoRA) | 316.5 M | 0.9270 | — | 0.9689 |
-| MANIQA (official) | 135.7 M | 0.8830 | — | 0.9704 |
-| TOPIQ | 45.2 M | 0.8470 | — | 0.9528 |
-| LIQE | 151.3 M | 0.8225 | — | 0.9183 |
-| ARNIQA | 23.5 M | 0.8210 | — | 0.9545 |
-| CLIP-IQA | 102.3 M | 0.7716 | — | 0.9331 |
+| B_Gated + LoRA | 319.7 M (3.4 M trainable) | **0.9424** | 0.9420 ± 0.0049 | 0.9731 |
+| **Ours, SigLIP-B/16 + KonIQ** | **93.4 M** | 0.9416 | **0.9481 ± 0.0096** | 0.9670 |
+| SigLIP2-L/16 384 | 316.6 M | 0.9392 | 0.9342 ± 0.0118 | 0.9706 |
+| B_Gated (no LoRA) | 316.5 M | 0.9270 | 0.9351 ± 0.0088 | 0.9689 |
+| MANIQA (official) | 135.7 M | 0.8830 | 0.8878 ± 0.0143 | 0.9704 |
+| TOPIQ | 45.2 M | 0.8470 | 0.8545 ± 0.0191 | 0.9528 |
+| LIQE | 151.3 M | 0.8225 | 0.8088 ± 0.0330 | 0.9183 |
+| ARNIQA | 23.5 M | 0.8210 | 0.8381 ± 0.0352 | 0.9545 |
+| CLIP-IQA | 102.3 M | 0.7716 | 0.8111 ± 0.0504 | 0.9331 |
 
-The 5-fold column is a *different estimator* of the same content protocol: the
-16 test reference contents are rotated so every reference is tested once.  An
-em dash means **not run**, not zero — a five-fold estimate needs five extra
-trainings per model, and was produced only for the two entries above.  Our
-model and SigLIP2 are the only entries with the full five-fold run
-(**0.9481 ± 0.0096** vs **0.9342 ± 0.0118**), which is the like-for-like
-protocol requested for the foundation comparison.
+Every entry now has both estimates.  They are *different estimators* of the
+same content protocol: the five seeds reuse one 16-reference test split (so the
+variance is training-seed variance), while the five folds rotate the test
+references so every reference is tested once.  The two disagree by up to 0.04
+for the weaker models (CLIP-IQA 0.772 → 0.811, ARNIQA 0.821 → 0.838, LIQE
+0.823 → 0.809), which is why neither is reported alone.
 
-**Conclusion:** the content split produces a **three-way statistical tie** at
-the top — ours **0.9416**, B_Gated+LoRA **0.9424**, SigLIP2 **0.9392** — with
-paired p = 0.77 and 0.59 respectively.  Under five-fold content CV our 93 M
-model scores **0.9481** against SigLIP2's **0.9342** (+0.0139).  No model in
-this audit is significantly better than ours, and ours is not significantly
-better than the two foundation-scale models; we can only claim **parity at
-3.4× fewer parameters**.  The random leaders are all around 0.97 because of
-leakage.  This is a **controlled efficiency result**, not an absolute SOTA
-claim.
+**Conclusion (two estimators, one honest reading):** on the five-seed
+single-split estimator the top three are a **statistical tie** — ours
+**0.9416**, B_Gated+LoRA **0.9424**, SigLIP2 **0.9392** (paired p = 0.77 and
+0.59).  On the five-fold estimator ours is **highest, 0.9481 ± 0.0096**, ahead
+of B_Gated+LoRA **0.9420** (paired fold p = 0.087, not significant) and SigLIP2
+**0.9342** (p = 0.030), with every other model significantly lower
+(p ≤ 0.003).  So ours is never behind and is modestly ahead on the fold
+estimator, but the audit still does **not** establish superiority over
+B_Gated+LoRA or SigLIP2 — the defensible claim remains **parity at 3.4× fewer
+parameters**.  The random leaders are all around 0.97 because of leakage; this
+is a **controlled efficiency result**, not an absolute SOTA claim.
 
 ## 5. TID2013 cross-dataset replication
 
@@ -205,10 +206,13 @@ consistent with KADID.
   epochs on both splits.
 * The random split's validation set also leaks, so early stopping is part of the
   leaky protocol rather than an independent control.
-* Five-fold content CV (0.9481) is a stronger estimate than the five
-  single-split content runs (0.9416); the random runs are single-split, so the
-  +0.025 row is a same-protocol comparison, not a five-fold estimate.  The same
-  holds for SigLIP2 (0.9342 five-fold vs 0.9392 five single splits).
+* Five-fold content CV is a lower-variance estimate than the five single-split
+  content runs, but it is not a significance test and the two estimators
+  disagree by up to 0.04 for the weak models.  The random runs are
+  single-split, so the +0.025 row is a same-protocol comparison, not a
+  five-fold estimate.  All nine models now have both estimates.
+* Fold-level paired tests use five fold scores per model; the folds are
+  disjoint content sets, so the test is reasonable but optimistic at n = 5.
 
 ## 7. Reproduce
 

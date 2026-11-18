@@ -54,9 +54,11 @@ A complete, reproducible NR-IQA research framework:
 lightweight model**, not an absolute state of the art.  Under the content-held-out
 protocol the 93 M model reaches **0.9416 ± 0.0137 (five seeds) / 0.9481
 (5-fold)**, statistically tied with SigLIP2-L (0.9392, p=0.588) and
-B_Gated+LoRA (0.9424, p=0.772) while using 3.4× fewer parameters; the next
+B_Gated+LoRA (0.9424, p=0.772) on single splits while using 3.4× fewer
+parameters; on five folds ours is nominally first (0.9481 vs 0.9420/0.9342) but
+the B_Gated+LoRA gap is not significant (paired fold p=0.087).  The next
 group is clearly lower — no-LoRA B_Gated 0.9270, MANIQA 0.8830, TOPIQ 0.8470,
-LIQE 0.8225, ARNIQA 0.8210, CLIP-IQA 0.7716.
+LIQE 0.8225, ARNIQA 0.8210, CLIP-IQA 0.7716 (five seeds).
 The random-split numbers near 0.97 are inflated by content leakage; B_Gated+LoRA
 is our reproduction of the paper's adapter recipe (3.4 M trainable adapters on a
 frozen 320 M backbone).  See `docs/final_report.md` §4.10 for the controlled
@@ -80,28 +82,29 @@ available) shows the inflation directly.  TOPIQ/ARNIQA/LIQE and MANIQA are fine-
 native/official recipes (LIQE with quality-class CE); CLIP-IQA uses a frozen
 probe:
 
-| Model | Content split SROCC | Random split SROCC | Δ |
-|---|---:|---:|---:|
-| B_Gated + LoRA (320 M, 3.4 M trainable) | **0.9424 ± 0.0088** | 0.9731 ± 0.0010 | **+0.0307** |
-| **Ours, SigLIP-B/16 + KonIQ (93 M)** | 0.9416 ± 0.0137 / **0.9481 (5-fold)** | 0.9670 ± 0.0019 | **+0.0253** |
-| SigLIP2-L/16 384 (316 M) | 0.9392 ± 0.0105 | 0.9706 ± 0.0016 | **+0.0314** |
-| B_Gated, no LoRA (316 M) | 0.9270 ± 0.0075 | 0.9689 ± 0.0009 | **+0.0418** |
-| MANIQA official (136 M) | 0.8830 ± 0.0171 | 0.9704 ± 0.0016 | **+0.0873** |
-| TOPIQ | 0.8470 ± 0.0184 | 0.9528 ± 0.0032 | **+0.1058** |
-| LIQE (full CE) | 0.8225 ± 0.0587 | 0.9183 ± 0.0021 | **+0.0958** |
-| ARNIQA | 0.8210 ± 0.0413 | 0.9545 ± 0.0030 | **+0.1335** |
-| CLIP-IQA (probe) | 0.7716 ± 0.0353 | 0.9331 ± 0.0029 | **+0.1615** |
+| Model | Content (5 seeds) | Content (5-fold) | Random (5 seeds) | Δ |
+|---|---:|---:|---:|---:|
+| B_Gated + LoRA (320 M, 3.4 M trainable) | **0.9424 ± 0.0088** | 0.9420 ± 0.0049 | 0.9731 ± 0.0010 | **+0.0307** |
+| **Ours, SigLIP-B/16 + KonIQ (93 M)** | 0.9416 ± 0.0137 | **0.9481 ± 0.0096** | 0.9670 ± 0.0019 | **+0.0253** |
+| SigLIP2-L/16 384 (316 M) | 0.9392 ± 0.0105 | 0.9342 ± 0.0118 | 0.9706 ± 0.0016 | **+0.0314** |
+| B_Gated, no LoRA (316 M) | 0.9270 ± 0.0075 | 0.9351 ± 0.0088 | 0.9689 ± 0.0009 | **+0.0418** |
+| MANIQA official (136 M) | 0.8830 ± 0.0171 | 0.8878 ± 0.0143 | 0.9704 ± 0.0016 | **+0.0873** |
+| TOPIQ (45 M) | 0.8470 ± 0.0184 | 0.8545 ± 0.0191 | 0.9528 ± 0.0032 | **+0.1058** |
+| LIQE (full CE, 151 M) | 0.8225 ± 0.0587 | 0.8088 ± 0.0330 | 0.9183 ± 0.0021 | **+0.0958** |
+| ARNIQA (24 M) | 0.8210 ± 0.0413 | 0.8381 ± 0.0352 | 0.9545 ± 0.0030 | **+0.1335** |
+| CLIP-IQA (probe, 102 M) | 0.7716 ± 0.0353 | 0.8111 ± 0.0504 | 0.9331 ± 0.0029 | **+0.1615** |
 
-Five-fold CV was run only for ours and SigLIP2; the other models were evaluated
-with five seeds on the single content split, not five folds.
+Both content estimators are measured for every model; they differ by up to 0.04
+for the weak models, so neither is reported alone.
 
-All models have five seeds. Paired tests: TOPIQ p=0.0003, ARNIQA
-p=0.0019, CLIP-IQA p=0.0005, LIQE p=0.024, B_Gated no-LoRA p=0.0003,
-B_Gated+LoRA p=0.0013, MANIQA p=0.0003, SigLIP2 p=0.0036, ours p=0.013.
-**Ours vs SigLIP2 content p=0.588 and vs B_Gated+LoRA p=0.772 — a three-way
-statistical tie**; our advantage is 3.4× fewer parameters and the five-fold
-estimate (0.9481 vs SigLIP2's 0.9342). The random-split leaders are inflated by
-content leakage.
+All models have five seeds and five folds. Five-seed paired tests: TOPIQ
+p=0.0003, ARNIQA p=0.0019, CLIP-IQA p=0.0005, LIQE p=0.024, B_Gated no-LoRA
+p=0.0003, B_Gated+LoRA p=0.0013, MANIQA p=0.0003, SigLIP2 p=0.0036, ours
+p=0.013. **Ours vs SigLIP2 p=0.588 and vs B_Gated+LoRA p=0.772 — a three-way
+statistical tie on single splits.** On the five-fold estimator ours is highest
+(0.9481), +0.006 over B_Gated+LoRA (paired fold p=0.087, not significant) and
++0.014 over SigLIP2 (p=0.030); the advantage that is unambiguous is 3.4× fewer
+parameters. The random-split leaders are inflated by content leakage.
 
 A zero-shot control on the same test subsets shows random is *not* easier
 (TOPIQ 0.620→0.615, CLIP-IQA 0.435→0.383, ARNIQA 0.737→0.699, LIQE flat), so
