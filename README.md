@@ -1,7 +1,6 @@
 # Project 28 — Building and Validating a New No-Reference Image-Quality Metric
 
 **Course:** CSE 681 — Digital Image Processing & Video Processing
-**Branch:** `playground`
 
 Build a lightweight **no-reference** image-quality model: predict a quality
 score from a single distorted image, with no pristine reference, and validate it
@@ -24,6 +23,7 @@ A complete, reproducible NR-IQA research framework:
     orderless statistical pooling + gated scale fusion.
   * `WaveQNet` (0.08 M): fixed Haar sub-band statistics + a tiny transformer.
 * **Compact pretrained baselines** (MobileNetV3, ResNet-18).
+* **Frozen M1 MVP**: MobileNetV3-Large + two-layer MLP, 0.569 KADID SROCC.
 * **Foundation encoders** (CLIP/SigLIP/DINOv2/SigLIP2) with partial fine-tuning,
   distortion-aware auxiliary heads and ranking losses.
 * **QStatFusion** (94 M): gated fusion of SigLIP features and the MSOSNet
@@ -253,9 +253,28 @@ PYTHONPATH=src .venv/bin/python -m nriqa.compare \
 
 | # | Week | Deliverable | Status |
 |---|---|---|---|
-| M1 | 3 | Proposal + literature review + baseline correlation table | Done |
-| M2 | 6 | Baseline reproduced + model trained (first checkpoint) + preliminary SROCC/PLCC | Done |
+| M1 | 3 | Proposal + literature review + baseline correlation table | Done — [proposal PDF](milestones/Project28_M1_proposal.pdf) |
+| M2 | 6 | Baseline reproduced + model trained (first checkpoint) + preliminary SROCC/PLCC | Done — [progress report PDF](milestones/m2_progress.pdf) |
 | M3 | 9 | Final model + ablation + cross-dataset check (train KADID → test TID2013) + report/demo | In progress |
+
+The M2 report also closes the literal M1 MVP. A frozen MobileNetV3-Large with a
+two-layer MLP head reaches **0.569 KADID SROCC / 0.595 PLCC** on the same content
+split (3.22 M parameters, 246 k trainable). That is below the fully fine-tuned
+MobileNetV3-Small (0.721), which is exactly why the main line moved to a partially
+fine-tuned SigLIP-B/16. The MVP checkpoint and resolved config are archived on the
+team Drive; §5 of the report records the artifact.
+
+### M2 checkpoints
+
+* **Frozen MobileNetV3-Large MVP** — `dip-p28/published/m2_mobilenetv3_large_frozen.zip`
+  (24.2 MB, SHA-256
+  `c03de72f31d8088e0e779edecb07008d90b138fa759bce628345dcaac7801c2d`).
+  Contains `best.pt`, `last.pt`, resolved `config.yaml`, environment, summary,
+  metrics and test predictions. Result manifest:
+  [results/m2_mobilenetv3_large_frozen.json](results/m2_mobilenetv3_large_frozen.json).
+* **Headline SigLIP-B/16 384 + KonIQ** — the original five fold checkpoints were
+  not present in the team Drive or the local workspace; only the result tables
+  under `results/cv/` are available. This remains an M3 reproducibility item.
 
 ## Documentation
 

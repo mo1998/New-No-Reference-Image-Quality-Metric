@@ -1,0 +1,53 @@
+{
+  "experiment": "mobilenetv3_large_frozen_kadid",
+  "description": "Literal M1 minimum-viable deliverable: frozen MobileNetV3-Large backbone with a trainable two-layer MLP head.",
+  "model": "mobilenet_v3_large",
+  "model_kwargs": {
+    "freeze": true,
+    "head": "mlp",
+    "head_hidden": 256,
+    "dropout": 0.1
+  },
+  "split": {
+    "protocol": "content-held-out, seed 42",
+    "train_refs": 57,
+    "val_refs": 8,
+    "test_refs": 16,
+    "train_images": 7125,
+    "val_images": 1000,
+    "test_images": 2000
+  },
+  "params": 3218225,
+  "params_trainable": 246273,
+  "best_epoch": 3,
+  "test": {
+    "srocc": 0.5690248299995324,
+    "plcc": 0.5951178251826529,
+    "rmse": 0.8692948648147293,
+    "krcc": 0.3984888572589007,
+    "n": 2000
+  },
+  "val": {
+    "srocc": 0.5777252315278386,
+    "plcc": 0.5922235368313588,
+    "rmse": 0.8662318808125846,
+    "krcc": 0.41111478108585575,
+    "n": 1000
+  },
+  "wall_time_s": 1112.225,
+  "checkpoint": {
+    "archive": "dip-p28/published/m2_mobilenetv3_large_frozen.zip",
+    "sha256": "c03de72f31d8088e0e779edecb07008d90b138fa759bce628345dcaac7801c2d",
+    "size_bytes": 24188537,
+    "run_dir": "/content/runs_m2/20261117-202537_mobilenetv3_large_frozen_kadid",
+    "files": [
+      "best.pt",
+      "last.pt",
+      "config.yaml",
+      "environment.json",
+      "summary.json",
+      "metrics.jsonl",
+      "predictions_test.csv"
+    ]
+  }
+}

@@ -42,6 +42,14 @@ results/cv/*_predictions.csv
 *.safetensors
 *.bin
 
+# LaTeX build artifacts
+*.aux
+*.blg
+*.log
+*.out
+*.toc
+*.synctex.gz
+
 teacher_preds/
 teacher_feats/
 results/smoke/
