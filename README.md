@@ -264,6 +264,13 @@ MobileNetV3-Small (0.721), which is exactly why the main line moved to a partial
 fine-tuned SigLIP-B/16. The MVP checkpoint and resolved config are archived on the
 team Drive; §5 of the report records the artifact.
 
+The M2 evaluation is complete on both estimators — five seeds on the single content
+split and five-fold CV for all nine models: ours **0.9481**, B_Gated+LoRA 0.9420,
+B_Gated 0.9351, SigLIP2 0.9342, MANIQA 0.8878, TOPIQ 0.8545, ARNIQA 0.8381,
+CLIP-IQA 0.8111, LIQE 0.8088. On single splits the top three are statistically tied;
+on folds ours ranks first but the B_Gated+LoRA gap is not significant (paired fold
+p=0.087). §4 of the progress report has both tables.
+
 ### M2 checkpoints
 
 * **Frozen MobileNetV3-Large MVP** — `dip-p28/published/m2_mobilenetv3_large_frozen.zip`

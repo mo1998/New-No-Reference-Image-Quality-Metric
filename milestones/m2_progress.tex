@@ -83,7 +83,10 @@ and foundation-encoder models. Our best model so far is a partially fine-tuned
 SigLIP-B/16 at 384 px, using distortion and level auxiliary heads, a ranking loss, flip
 TTA and KonIQ-10k as extra data. It reaches \textbf{0.9481 $\pm$ 0.0096 SROCC} over five
 content folds and \textbf{0.7429 $\pm$ 0.0113} zero-shot on TID2013 with 93.4 M
-parameters. The M1 minimum-viable deliverable is now met in its literal form as well: the
+parameters. On the same folds it is statistically tied with two 320 M foundation models
+(B\_Gated+LoRA 0.9420, SigLIP2-L 0.9342), so the contribution is parity at
+3.4$\times$ fewer parameters rather than a new state of the art. The M1
+minimum-viable deliverable is now met in its literal form as well: the
 frozen MobileNetV3-Large with a two-layer MLP reaches \textbf{0.569 SROCC} and
 \textbf{0.595 PLCC} on the same split, and the foundation model above is an extension
 beyond it.
@@ -270,8 +273,9 @@ failures.}
 \begin{table}[H]
 \centering
 \small
-\caption{Five-fold content cross-validation on KADID-10k. Each fold holds out 16 reference
-contents. TID2013 is evaluated zero-shot from the KADID-trained checkpoint.}
+\caption{Five-fold content cross-validation on KADID-10k for our model variants. Each
+fold holds out 16 reference contents. TID2013 is evaluated zero-shot from the
+KADID-trained checkpoint.}
 \label{tab:cv}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lrrrr@{}}
@@ -284,6 +288,39 @@ SigLIP-B/16 384 + aux/rank/TTA & 93.4 M  & 0.9393 $\pm$ 0.0149 & 0.9441 & 0.7166
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{The same five folds (identical fold partition) for every controlled baseline
+from the split audit. TID2013 was not run five-fold for the baselines. Best controlled
+result per column in bold.}
+\label{tab:cv_baselines}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Method} & \textbf{Params} & \textbf{KADID SROCC} & \textbf{KADID PLCC} & \textbf{TID2013 SROCC} \\
+\midrule
+SigLIP-B/16 384, KADID + KonIQ (ours) & 93.4 M & \textbf{0.9481 $\pm$ 0.0096} & \textbf{0.9524} & \textbf{0.7429 $\pm$ 0.0113} \\
+B\_Gated + LoRA (r16)             & 319.7 M & 0.9420 $\pm$ 0.0049 & 0.9477 & -- \\
+B\_Gated (no LoRA)                & 316.5 M & 0.9351 $\pm$ 0.0088 & 0.9398 & -- \\
+SigLIP2-L/16 384                  & 316.6 M & 0.9342 $\pm$ 0.0118 & 0.9389 & -- \\
+MANIQA (official recipe)          & 135.7 M & 0.8878 $\pm$ 0.0143 & 0.8950 & -- \\
+TOPIQ                             & 45.2 M  & 0.8545 $\pm$ 0.0191 & 0.8633 & -- \\
+ARNIQA                            & 23.5 M  & 0.8381 $\pm$ 0.0352 & 0.8441 & -- \\
+CLIP-IQA (frozen probe)           & 102.3 M & 0.8111 $\pm$ 0.0504 & 0.8185 & -- \\
+LIQE (native CE)                  & 151.3 M & 0.8088 $\pm$ 0.0330 & 0.8187 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the five-fold estimator our model ranks first (0.9481), ahead of B\_Gated+LoRA
+(0.9420; paired fold $p=0.087$, not significant) and SigLIP2-L (0.9342; $p=0.030$).
+The five-seed single-split estimate instead gives a three-way tie (0.9416 / 0.9424 /
+0.9392; $p=0.59$--$0.77$), and the two estimators differ by up to 0.04 for the weaker
+models. We therefore report both and do not pick the favourable one: the defensible
+claim is parity with the 320 M foundation models at 3.4$\times$ fewer parameters, not a
+new state of the art.
 
 \section{Challenges \& Deviations from the M1 Plan}
 \label{sec:challenges}
